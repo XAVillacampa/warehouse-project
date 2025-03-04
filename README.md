@@ -157,6 +157,3 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 This project is licensed under the MIT License.
 
-
-You can create a `README.md` file in your project directory and paste the above content into it.
-You can create a `README.md` file in your project directory and paste the above content into it.
