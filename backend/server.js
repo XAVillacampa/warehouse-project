@@ -5,7 +5,6 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { verifyToken, generateToken, decodeToken } = require("./authUsers");
-const { v4: uuidv4 } = require("uuid");
 
 dotenv.config();
 
@@ -1486,3 +1485,5 @@ app.put("/api/billings/:id/cancel", verifyToken, async (req, res) => {
 app.listen(port, () => {
   console.log(`Backend running on http://localhost:${port}`);
 });
+
+module.exports = app;
