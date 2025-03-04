@@ -320,6 +320,139 @@ app.post("/api/inbound-shipments", async (req, res) => {
   }
 });
 
+// Bulk upload inbound shipments
+app.post("/api/inbound-shipments/bulk", async (req, res) => {
+  const shipments = req.body;
+
+  // Log the received shipments for debugging
+  console.log("Received shipments:", shipments);
+
+  if (!Array.isArray(shipments)) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid data format" });
+  }
+
+  const maxRetries = 3;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      const connection = await db.getConnection();
+      await connection.beginTransaction();
+
+      for (const shipment of shipments) {
+        const {
+          shipping_date,
+          box_label,
+          sku,
+          warehouse_code,
+          quantity,
+          arriving_date,
+          tracking_number,
+          vendor_number,
+        } = shipment;
+
+        // Ensure all required fields are provided
+        if (
+          !shipping_date ||
+          !box_label ||
+          !sku ||
+          !warehouse_code ||
+          !quantity ||
+          !arriving_date ||
+          !tracking_number ||
+          !vendor_number
+        ) {
+          console.error("Missing required fields in shipment:", shipment);
+          await connection.rollback();
+          connection.release();
+          return res
+            .status(400)
+            .json({ success: false, error: "Missing required fields" });
+        }
+
+        // Check if the SKU exists in the inventory table
+        const [inventory] = await connection.execute(
+          "SELECT sku FROM inventory WHERE sku = ?",
+          [sku]
+        );
+
+        if (inventory.length === 0) {
+          console.error("SKU not found in inventory:", sku);
+          await connection.rollback();
+          connection.release();
+          return res
+            .status(404)
+            .json({ success: false, error: "SKU not found in inventory" });
+        }
+
+        // Check if the warehouse_code exists in the inventory table
+        const [warehouse] = await connection.execute(
+          "SELECT warehouse_code FROM inventory WHERE warehouse_code = ?",
+          [warehouse_code]
+        );
+
+        if (warehouse.length === 0) {
+          console.error("Warehouse code not found in inventory:", warehouse_code);
+          await connection.rollback();
+          connection.release();
+          return res
+            .status(404)
+            .json({ success: false, error: "Warehouse code not found in inventory" });
+        }
+
+        // Insert inbound shipment
+        await connection.execute(
+          `INSERT INTO Inbound_Shipments 
+          (shipping_date, box_label, sku, warehouse_code, quantity, arriving_date, tracking_number, vendor_number) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+          [
+            shipping_date,
+            box_label,
+            sku,
+            warehouse_code,
+            quantity,
+            arriving_date,
+            tracking_number,
+            vendor_number,
+          ]
+        );
+
+        // Update inventory stock
+        await connection.execute(
+          `UPDATE Inventory 
+          SET stock_check = stock_check + ? 
+          WHERE sku = ?;`,
+          [quantity, sku]
+        );
+      }
+
+      // Commit the transaction
+      await connection.commit();
+      connection.release();
+
+      res.status(201).json({
+        success: true,
+        message: "Inbound shipments added successfully!",
+      });
+      return;
+    } catch (err) {
+      if (err.code === 'ER_LOCK_WAIT_TIMEOUT') {
+        attempt++;
+        console.error(`Lock wait timeout exceeded, retrying (${attempt}/${maxRetries})...`);
+        if (attempt >= maxRetries) {
+          console.error("Max retries reached. Could not complete the transaction.");
+          return res.status(500).json({ success: false, error: "Internal Server Error" });
+        }
+      } else {
+        console.error("Error adding inbound shipments:", err);
+        return res.status(500).json({ success: false, error: "Internal Server Error" });
+      }
+    }
+  }
+});
+
 // Update an inbound shipment
 app.put("/api/inbound-shipments/:id", async (req, res) => {
   const { id } = req.params;

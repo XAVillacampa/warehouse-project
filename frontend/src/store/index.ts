@@ -17,6 +17,7 @@ import {
   addInboundShipmentAPI,
   updateInboundShipmentAPI,
   deleteInboundShipmentAPI,
+  bulkImportInboundShipmentsAPI,
   fetchOutboundShipmentsAPI,
   addOutboundShipmentAPI,
   updateOutboundShipmentAPI,
@@ -52,6 +53,7 @@ interface InventoryState {
   fetchProducts: () => void;
   fetchInbound: () => void;
   addInbound: (inbound: InboundShipment) => void;
+  bulkUploadInbound: (inbound: InboundShipment[]) => void;
   updateInbound: (inbound: InboundShipment) => void;
   deleteInbound: (id: number) => void;
   fetchOutbound: () => void;
@@ -147,17 +149,17 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Bulk import outbound shipments
-      bulkUploadOutbound: async (outbound) => {
+      // Bulk import inbound shipments
+      bulkUploadInbound: async (inbound) => {
         try {
-          const result = await bulkImportOutboundShipmentsAPI(outbound);
-          if (result.success && result.outbound) {
+          const result = await bulkImportInboundShipmentsAPI(inbound);
+          if (result.success && result.inbound) {
             set((state) => ({
-              outbound: [...state.outbound, ...result.outbound],
+              inbound: [...state.inbound, ...result.inbound],
             }));
           }
         } catch (error) {
-          console.error("Error bulk uploading outbound shipments:", error);
+          console.error("Error bulk uploading inbound shipments:", error);
         }
       },
 
@@ -208,6 +210,20 @@ export const useInventoryStore = create<InventoryState>()(
           set((state) => ({ outbound: [...state.outbound, newOutbound] }));
         } catch (error) {
           console.error("Error adding outbound:", error);
+        }
+      },
+
+      // Bulk import outbound shipments
+      bulkUploadOutbound: async (outbound) => {
+        try {
+          const result = await bulkImportOutboundShipmentsAPI(outbound);
+          if (result.success && result.outbound) {
+            set((state) => ({
+              outbound: [...state.outbound, ...result.outbound],
+            }));
+          }
+        } catch (error) {
+          console.error("Error bulk uploading outbound shipments:", error);
         }
       },
 

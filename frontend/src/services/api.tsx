@@ -1,5 +1,5 @@
 import axios from "axios";
-import { OutboundShipment } from "../types";
+import { InboundShipment, OutboundShipment } from "../types";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -72,6 +72,22 @@ export const addInboundShipmentAPI = async (shipment) => {
     return response.data;
   } catch (error) {
     handleApiError(error, "Error adding inbound shipment");
+  }
+};
+
+export const bulkImportInboundShipmentsAPI = async (
+  shipments: InboundShipment[]
+) => {
+  try {
+    console.log("Shipments: ", shipments);
+    const response = await axios.post(
+      `${API_BASE_URL}/inbound-shipments/bulk`, // Corrected URL
+      shipments
+    );
+    console.log("Bulk import response:", response);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error bulk importing inbound shipments");
   }
 };
 

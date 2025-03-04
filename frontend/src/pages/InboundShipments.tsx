@@ -16,7 +16,7 @@ import { useForm, Controller } from "react-hook-form";
 import { InboundShipment, Inventory } from "../types";
 import { useInventoryStore, useAlertStore } from "../store";
 import { useAuthStore } from "../store/auth";
-import BulkTransactionModal from "../components/BulkTransactionModal";
+import BulkInboundShipmentModal from "../components/BulkInboundShipmentModal";
 import { generateWorkflowNumber } from "../utils/workflow";
 
 interface InboundShipmentFormData {
@@ -40,9 +40,6 @@ function InboundShipments() {
   const [editingShipment, setEditingShipment] =
     useState<InboundShipment | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<
-    "all" | "pending" | "completed" | "cancelled"
-  >("all");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   // const [allProducts, setAllProducts] = useState([]);
   // const [allTransactions, setAllTransactions] = useState([]);
@@ -64,10 +61,8 @@ function InboundShipments() {
     addInbound,
     updateInbound,
     deleteInbound,
+    bulkUploadInbound,
   } = useInventoryStore();
-  const bulkUploadTransactions = useInventoryStore(
-    (state) => state.bulkUploadTransactions
-  );
   const { setAlert } = useAlertStore();
   const { user } = useAuthStore();
 
@@ -204,7 +199,7 @@ function InboundShipments() {
   const handleBulkImport = async (newTransactions: InboundShipment[]) => {
     try {
       // Call the API endpoint with the whole array of transactions
-      await bulkUploadTransactions(newTransactions);
+      await bulkUploadInbound(newTransactions);
       // console.log("Bulk uploaded transactions:", newTransactions);
 
       setAlert(
@@ -402,7 +397,7 @@ function InboundShipments() {
         onClose={() => setIsBulkImportModalOpen(false)}
         title="Bulk Import Inbound Shipments"
       >
-        <BulkTransactionModal
+        <BulkInboundShipmentModal
           onClose={() => setIsBulkImportModalOpen(false)}
           onImport={handleBulkImport}
           products={products}
@@ -445,7 +440,7 @@ function InboundShipments() {
                       colSpan={8}
                       className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
-                      No workflows found. Create a new inbound or outbound
+                      No workflows found. Create a new inbound
                       workflow to get started.
                     </td>
                   </tr>

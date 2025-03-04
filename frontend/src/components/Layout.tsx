@@ -41,18 +41,6 @@ const navigation: NavItem[] = [
     roles: ["admin", "staff", "vendor"],
   },
   {
-    name: "Orders",
-    href: "/orders",
-    icon: ClipboardList,
-    roles: ["admin", "staff", "vendor"],
-  },
-  {
-    name: "Workflow",
-    href: "/transactions",
-    icon: ArrowRightLeft,
-    roles: ["admin", "staff"],
-  },
-  {
     name: "Inbound Shipments",
     href: "/inbound-shipments",
     icon: ArrowRightLeft,
