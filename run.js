@@ -1,4 +1,4 @@
-const concurrently = require("../../../AppData/Roaming/npm/node_modules/concurrently");
+const concurrently = require("concurrently");
 const path = require("path");
 
 const frontendPath = path.resolve(__dirname, "frontend");
