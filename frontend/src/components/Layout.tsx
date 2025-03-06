@@ -13,6 +13,10 @@ import {
   Moon,
   DollarSign,
   ClipboardList,
+  MoveDown,
+  Truck,
+  Download,
+  Upload,
 } from "lucide-react";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
@@ -43,13 +47,13 @@ const navigation: NavItem[] = [
   {
     name: "Inbound Shipments",
     href: "/inbound-shipments",
-    icon: ArrowRightLeft,
+    icon: Download,
     roles: ["admin", "staff"],
   },
   {
     name: "Outbound Shipments",
     href: "/outbound-shipments",
-    icon: ArrowRightLeft,
+    icon: Upload,
     roles: ["admin", "staff"],
   },
   { name: "Users", href: "/users", icon: Users, roles: ["admin"] },
