@@ -3,7 +3,6 @@ const mysql = require("mysql2/promise");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const { verifyToken, generateToken, decodeToken } = require("./authUsers");
 
 dotenv.config();

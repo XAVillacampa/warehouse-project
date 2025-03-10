@@ -194,9 +194,9 @@ VALUES
   );
 
 CREATE TABLE Claims (
-  claim_id INT AUTO_INCREMENT PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   order_id VARCHAR(20) NOT NULL,
-  claim_date DATE NOT NULL,
+  order_date DATE NOT NULL,
   sku VARCHAR(100) NOT NULL,
   item_quantity INT NOT NULL DEFAULT 1,
   warehouse_code VARCHAR(10) NOT NULL,

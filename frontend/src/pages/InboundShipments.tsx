@@ -428,7 +428,7 @@ function InboundShipments() {
                   <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Tracking number
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -440,8 +440,8 @@ function InboundShipments() {
                       colSpan={8}
                       className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
-                      No workflows found. Create a new inbound
-                      workflow to get started.
+                      No workflows found. Create a new inbound workflow to get
+                      started.
                     </td>
                   </tr>
                 ) : (
@@ -470,10 +470,10 @@ function InboundShipments() {
                             shipments.arriving_date
                           ).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                           {shipments.tracking_number}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="relative inline-block text-left">
                             <button
                               onClick={() =>

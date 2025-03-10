@@ -37,7 +37,9 @@ function Products() {
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [isLogChangesModalOpen, setIsLogChangesModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Inventory | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Inventory | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Inventory | null>(
+    null
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedNames, setExpandedNames] = useState<Set<string>>(new Set());
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -86,7 +88,7 @@ function Products() {
   }, [setOpenActionMenu]);
 
   useEffect(() => {
-    fetchProducts()
+    fetchProducts();
   }, [fetchProducts]);
 
   // Filter products
@@ -187,7 +189,10 @@ function Products() {
     // Set form values
     Object.keys(product).forEach((key) => {
       if (key in product) {
-        setValue(key as keyof ProductFormData, String(product[key as keyof Inventory]));
+        setValue(
+          key as keyof ProductFormData,
+          String(product[key as keyof Inventory])
+        );
       }
     });
     setIsModalOpen(true);
@@ -225,7 +230,9 @@ function Products() {
   const truncateName = (product_name: string, productId: string) => {
     if (!product_name) return ""; // Return empty string
     if (expandedNames.has(productId)) return product_name; // Return full name
-    return product_name.length > 30 ? `${product_name.substring(0, 30)}...` : product_name; // Return truncated name
+    return product_name.length > 30
+      ? `${product_name.substring(0, 30)}...`
+      : product_name; // Return truncated name
   };
 
   return (
@@ -431,22 +438,22 @@ function Products() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     SKU
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Outbound
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Warehouse Code
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Vendor Number
                   </th>
                   <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -468,27 +475,27 @@ function Products() {
                 ) : (
                   filteredProducts.map((product) => (
                     <tr key={product.sku}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-500 dark:text-white">
                         {product.sku}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
                         <button
                           onClick={() => toggleNameExpansion(product.sku)}
-                          className="text-left hover:text-gray-900 dark:hover:text-white"
+                          className="hover:text-gray-900 dark:hover:text-white"
                         >
                           {truncateName(product.product_name, product.sku)}
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
                         {product.stock_check}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
                         {product.outbound}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
                         {product.warehouse_code}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
                         {product.vendor_number}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
