@@ -894,7 +894,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
   const shipments = req.body;
 
   // Log the received shipments for debugging
-  console.log("Received shipments:", shipments);
+  console.log("Received outbound shipments:", shipments);
 
   if (!Array.isArray(shipments)) {
     return res
@@ -944,7 +944,10 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
         !shipping_fee ||
         !vendor_number
       ) {
-        console.error("Missing required fields in shipment:", shipment);
+        console.error(
+          "Missing required fields in outbound shipment:",
+          shipment
+        );
         await connection.rollback();
         connection.release();
         return res
@@ -992,7 +995,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
       await connection.execute(
         `INSERT INTO outbound_shipments 
         (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           formattedOrderDate,
           order_id,
@@ -1019,7 +1022,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
       await connection.execute(
         `UPDATE inventory 
         SET stock_check = stock_check - ?, outbound = outbound + ? 
-        WHERE sku = ?`,
+        WHERE sku = ?;`,
         [item_quantity, item_quantity, sku]
       );
     }

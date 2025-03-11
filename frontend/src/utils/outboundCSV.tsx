@@ -54,8 +54,9 @@ export const parseOutboundShipmentCSV = (
           case "state":
             shipment.state = values[index];
             break;
+          case "tracking number":
           case "tracking":
-            shipment.tracking = values[index];
+            shipment.tracking_number = values[index];
             break;
           case "shipping fee":
             shipment.shipping_fee = Number(values[index]);

@@ -96,7 +96,7 @@ function BulkOutboundShipmentModal({
       "Zip Code",
       "City",
       "State",
-      "Tracking",
+      "Tracking Number",
       "Shipping Fee",
       "Image Link",
       "Vendor",
