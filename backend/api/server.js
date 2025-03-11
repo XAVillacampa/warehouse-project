@@ -263,8 +263,10 @@ app.post("/api/inbound-shipments", async (req, res) => {
       !warehouse_code ||
       !item_quantity ||
       !arriving_date ||
-      !tracking_number
+      !tracking_number ||
+      !vendor_number
     ) {
+      console.error("Missing required fields:", req.body);
       return res
         .status(400)
         .json({ success: false, error: "Missing required fields" });
@@ -275,6 +277,37 @@ app.post("/api/inbound-shipments", async (req, res) => {
     await connection.beginTransaction();
 
     try {
+      // Check if the SKU exists in the inventory table
+      const [inventory] = await connection.execute(
+        "SELECT sku FROM inventory WHERE sku = ?",
+        [sku]
+      );
+
+      if (inventory.length === 0) {
+        console.error("SKU not found in inventory:", sku);
+        await connection.rollback();
+        connection.release();
+        return res
+          .status(404)
+          .json({ success: false, error: "SKU not found in inventory" });
+      }
+
+      // Check if the warehouse_code exists in the inventory table
+      const [warehouse] = await connection.execute(
+        "SELECT warehouse_code FROM inventory WHERE warehouse_code = ?",
+        [warehouse_code]
+      );
+
+      if (warehouse.length === 0) {
+        console.error("Warehouse code not found in inventory:", warehouse_code);
+        await connection.rollback();
+        connection.release();
+        return res.status(404).json({
+          success: false,
+          error: "Warehouse code not found in inventory",
+        });
+      }
+
       // Insert inbound shipment
       await connection.execute(
         `INSERT INTO Inbound_Shipments 
@@ -309,6 +342,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
         message: "Inbound shipment added successfully!",
       });
     } catch (err) {
+      console.error("Error during transaction:", err);
       await connection.rollback();
       connection.release();
       throw err;
@@ -393,12 +427,16 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
         );
 
         if (warehouse.length === 0) {
-          console.error("Warehouse code not found in inventory:", warehouse_code);
+          console.error(
+            "Warehouse code not found in inventory:",
+            warehouse_code
+          );
           await connection.rollback();
           connection.release();
-          return res
-            .status(404)
-            .json({ success: false, error: "Warehouse code not found in inventory" });
+          return res.status(404).json({
+            success: false,
+            error: "Warehouse code not found in inventory",
+          });
         }
 
         // Insert inbound shipment
@@ -423,7 +461,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
           `UPDATE Inventory 
           SET stock_check = stock_check + ? 
           WHERE sku = ?;`,
-          [quantity, sku]
+          [item_quantity, sku]
         );
       }
 
@@ -437,16 +475,24 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
       });
       return;
     } catch (err) {
-      if (err.code === 'ER_LOCK_WAIT_TIMEOUT') {
+      if (err.code === "ER_LOCK_WAIT_TIMEOUT") {
         attempt++;
-        console.error(`Lock wait timeout exceeded, retrying (${attempt}/${maxRetries})...`);
+        console.error(
+          `Lock wait timeout exceeded, retrying (${attempt}/${maxRetries})...`
+        );
         if (attempt >= maxRetries) {
-          console.error("Max retries reached. Could not complete the transaction.");
-          return res.status(500).json({ success: false, error: "Internal Server Error" });
+          console.error(
+            "Max retries reached. Could not complete the transaction."
+          );
+          return res
+            .status(500)
+            .json({ success: false, error: "Internal Server Error" });
         }
       } else {
         console.error("Error adding inbound shipments:", err);
-        return res.status(500).json({ success: false, error: "Internal Server Error" });
+        return res
+          .status(500)
+          .json({ success: false, error: "Internal Server Error" });
       }
     }
   }
@@ -467,6 +513,23 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
   } = req.body;
 
   try {
+    // Ensure all required fields are provided
+    if (
+      !shipping_date ||
+      !box_label ||
+      !sku ||
+      !warehouse_code ||
+      !item_quantity ||
+      !arriving_date ||
+      !tracking_number ||
+      !vendor_number
+    ) {
+      console.error("Missing required fields:", req.body);
+      return res
+        .status(400)
+        .json({ success: false, error: "Missing required fields" });
+    }
+
     // Check if the shipment exists
     const [existing] = await db.execute(
       "SELECT * FROM Inbound_Shipments WHERE shipment_id = ?",
@@ -496,7 +559,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
     const stock_check = inventory[0].stock_check;
 
     // Adjust inventory stock if quantity has changed
-    let quantityDifference = item_quantity + oldQuantity;
+    const quantityDifference = item_quantity - oldQuantity;
 
     if (quantityDifference !== 0) {
       await db.execute(
@@ -558,15 +621,18 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
     // Start a transaction
     const connection = await db.getConnection();
     if (!connection) {
-      return res.status(500).json({ success: false, message: "Database connection failed" });
+      return res
+        .status(500)
+        .json({ success: false, message: "Database connection failed" });
     }
 
     await connection.beginTransaction();
 
     try {
-      await connection.execute("DELETE FROM Inbound_Shipments WHERE shipment_id = ?", [
-        id,
-      ]);
+      await connection.execute(
+        "DELETE FROM Inbound_Shipments WHERE shipment_id = ?",
+        [id]
+      );
       await connection.execute(
         `UPDATE Inventory
         SET stock_check = stock_check - ?
@@ -688,7 +754,11 @@ app.post("/api/outbound-shipments", async (req, res) => {
   } = req.body;
 
   try {
-    const order_id = await generateOrderId(); // Generate the order_id
+    // Start a transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    const order_id = await generateOrderId(connection); // Generate the order_id
 
     // Ensure all required fields are provided
     if (
@@ -706,18 +776,22 @@ app.post("/api/outbound-shipments", async (req, res) => {
       !shipping_fee ||
       !vendor_number
     ) {
+      await connection.rollback();
+      connection.release();
       return res
         .status(400)
         .json({ success: false, error: "Missing required fields" });
     }
 
     // Fetch stock_check and outbound from the inventory table
-    const [inventory] = await db.execute(
+    const [inventory] = await connection.execute(
       "SELECT stock_check, outbound FROM inventory WHERE sku = ?",
       [sku]
     );
 
     if (inventory.length === 0) {
+      await connection.rollback();
+      connection.release();
       return res
         .status(404)
         .json({ success: false, error: "SKU not found in inventory" });
@@ -728,6 +802,8 @@ app.post("/api/outbound-shipments", async (req, res) => {
 
     // Ensure sufficient stock
     if (stock_check < item_quantity) {
+      await connection.rollback();
+      connection.release();
       return res
         .status(400)
         .json({ success: false, error: "Insufficient stock for the SKU" });
@@ -763,61 +839,50 @@ app.post("/api/outbound-shipments", async (req, res) => {
       vendor_number,
     });
 
-    // Start a transaction
-    const connection = await db.getConnection();
-    await connection.beginTransaction();
-
-    try {
-      // Insert the new outbound shipment
-      await connection.execute(
-        `INSERT INTO outbound_shipments 
-        (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          formattedOrderDate,
-          order_id,
-          sku,
-          item_quantity,
-          warehouse_code,
-          stock_check,
-          customer_name,
-          country,
-          address1,
-          address2Value,
-          zip_code,
-          city,
-          state,
-          tracking_number,
-          shipping_fee,
-          noteValue,
-          imageLinkValue,
-          vendor_number,
-        ]
-      );
-
-      // Update the inventory table
-      await connection.execute(
-        `UPDATE inventory 
-        SET stock_check = stock_check - ?, outbound = outbound + ? 
-        WHERE sku = ?`,
-        [item_quantity, item_quantity, sku]
-      );
-
-      // Commit the transaction
-      await connection.commit();
-      connection.release();
-
-      res.status(201).json({
-        success: true,
-        message: "Outbound shipment added successfully!",
+    // Insert the new outbound shipment
+    await connection.execute(
+      `INSERT INTO outbound_shipments 
+      (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        formattedOrderDate,
         order_id,
-      });
-    } catch (err) {
-      // Rollback the transaction in case of error
-      await connection.rollback();
-      connection.release();
-      throw err;
-    }
+        sku,
+        item_quantity,
+        warehouse_code,
+        stock_check,
+        customer_name,
+        country,
+        address1,
+        address2Value,
+        zip_code,
+        city,
+        state,
+        tracking_number,
+        shipping_fee,
+        noteValue,
+        imageLinkValue,
+        vendor_number,
+      ]
+    );
+
+    // Update the inventory table
+    await connection.execute(
+      `UPDATE inventory 
+      SET stock_check = stock_check - ?, outbound = outbound + ? 
+      WHERE sku = ?`,
+      [item_quantity, item_quantity, sku]
+    );
+
+    // Commit the transaction
+    await connection.commit();
+    connection.release();
+
+    res.status(201).json({
+      success: true,
+      message: "Outbound shipment added successfully!",
+      order_id,
+    });
   } catch (err) {
     console.error("Error adding outbound shipment:", err);
     res.status(500).json({ success: false, error: "Internal Server Error" });
