@@ -29,7 +29,7 @@ interface OutboundShipmentFormData {
   zip_code: string;
   city: string;
   state: string;
-  tracking: string;
+  tracking_number: string;
   shipping_fee: number;
   note?: string;
   image_link?: string;
@@ -39,7 +39,6 @@ interface OutboundShipmentFormData {
 function OutboundShipments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<"inbound" | "outbound">("inbound");
   const [editingShipment, setEditingShipment] =
     useState<OutboundShipment | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,7 +54,7 @@ function OutboundShipments() {
     formState: { errors },
   } = useForm<OutboundShipmentFormData>();
   const {
-    products,
+    inventory,
     outbound,
     fetchProducts,
     fetchOutbound,
@@ -106,13 +105,13 @@ function OutboundShipments() {
   // Filter products based on user role (vendor or admin)
   const filteredProducts = useMemo(() => {
     if (isVendor) {
-      return products.filter(
+      return inventory.filter(
         (product) => product.vendor_number === user.vendor_number
       );
     } else {
-      return products;
+      return inventory;
     }
-  }, [products, isVendor, user.vendor_number]);
+  }, [inventory, isVendor, user.vendor_number]);
 
   const productOptions = useMemo(
     () =>
@@ -132,7 +131,7 @@ function OutboundShipments() {
     // console.log("Is Array?", Array.isArray(allTransactions));
     return outbound
       .filter((shipment) => {
-        const product = products.find((p) => p.sku === shipment.sku);
+        const product = inventory.find((p) => p.sku === shipment.sku);
         const searchString =
           `${product?.sku} ${product?.product_name} ${shipment.order_id} ${product?.vendor_number}`.toLowerCase();
 
@@ -142,7 +141,7 @@ function OutboundShipments() {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-  }, [outbound, products, searchTerm]);
+  }, [outbound, inventory, searchTerm]);
 
   // Format the date for MySQL
   const formatDateForMySQL = (date) => {
@@ -183,7 +182,7 @@ function OutboundShipments() {
       setAlert("Outbound shipment updated successfully", "success"); // Show success alert
     } else {
       // For a new shipment, first find the related product by SKU
-      const product = products.find((p) => p.sku === data.sku);
+      const product = inventory.find((p) => p.sku === data.sku);
 
       // Check if the product quantity is sufficient for the outbound shipment
       if (product && product.stock_check < data.item_quantity) {
@@ -237,7 +236,7 @@ function OutboundShipments() {
     setValue("zip_code", shipment.zip_code);
     setValue("city", shipment.city);
     setValue("state", shipment.state);
-    setValue("tracking", shipment.tracking);
+    setValue("tracking_number", shipment.tracking_number);
     setValue("shipping_fee", shipment.shipping_fee);
     setValue("note", shipment.note || "");
     setValue("image_link", shipment.image_link || "");
@@ -273,7 +272,6 @@ function OutboundShipments() {
         <div className="flex space-x-3">
           <button
             onClick={() => {
-              setModalType("outbound");
               setIsModalOpen(true);
             }}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
@@ -451,11 +449,11 @@ function OutboundShipments() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Tracking
+              Tracking Number
             </label>
             <input
               type="text"
-              {...register("tracking")} // No need for validation
+              {...register("tracking_number")} // No need for validation
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
@@ -553,7 +551,7 @@ function OutboundShipments() {
                   </tr>
                 ) : (
                   filteredShipments.map((shipments) => {
-                    const product = products.find(
+                    const product = inventory.find(
                       (p) => p.sku === shipments.sku
                     );
                     return (
@@ -574,7 +572,7 @@ function OutboundShipments() {
                           {shipments.customer_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
-                          {shipments.tracking}
+                          {shipments.tracking_number}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                           ${shipments.shipping_fee}

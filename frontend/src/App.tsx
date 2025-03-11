@@ -12,8 +12,9 @@ import Billings from "./pages/Billings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Alert from "./components/Alert";
-import InboundShipments from "./pages/InboundShipments"
+import InboundShipments from "./pages/InboundShipments";
 import OutboundShipments from "./pages/OutboundShipments";
+import Claims from "./pages/Claims";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuthStore } from "./store/auth";
 
@@ -71,22 +72,6 @@ function App() {
                 }
               />
               <Route
-                path="orders"
-                element={
-                  <ProtectedRoute allowedRoles={["admin", "staff", "vendor"]}>
-                    <Orders />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="transactions"
-                element={
-                  <ProtectedRoute allowedRoles={["admin", "staff"]}>
-                    <Transactions />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="inbound-shipments"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "staff", "vendor"]}>
@@ -99,6 +84,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["admin", "staff", "vendor"]}>
                     <OutboundShipments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="claims"
+                element={
+                  <ProtectedRoute allowedRoles={["admin", "staff"]}>
+                    <Claims />
                   </ProtectedRoute>
                 }
               />

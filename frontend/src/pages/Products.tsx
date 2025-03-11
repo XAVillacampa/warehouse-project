@@ -48,7 +48,7 @@ function Products() {
 
   const { register, handleSubmit, reset, setValue, watch } =
     useForm<ProductFormData>();
-  const { products, addProduct, updateProduct, deleteProduct, fetchProducts } =
+  const { inventory, addProduct, updateProduct, deleteProduct, fetchProducts } =
     useInventoryStore();
   const { user, getAllowedVendorNumbers } = useAuthStore();
   const { setAlert } = useAlertStore();
@@ -92,9 +92,9 @@ function Products() {
   }, [fetchProducts]);
 
   // Filter products
-  const filteredProducts = useMemo(() => {
+  const filteredInventory = useMemo(() => {
     // Filter by vendor number for vendor users
-    return products.filter((product) => {
+    return inventory.filter((product) => {
       // Check if allowedVendorNumbers includes "ALL"
       if (user?.role === "vendor" && !allowedVendorNumbers.includes("ALL")) {
         // Check if product vendor number is in allowedVendorNumbers
@@ -108,7 +108,7 @@ function Products() {
         `${product.sku} ${product.product_name} ${product.warehouse_code} ${product.vendor_number}`.toLowerCase(); // Lowercase search term
       return searchString.includes(searchTerm.toLowerCase()); // Case-insensitive search
     });
-  }, [products, searchTerm, user, allowedVendorNumbers]); // Include user and allowedVendorNumbers in the dependency array
+  }, [inventory, searchTerm, user, allowedVendorNumbers]); // Include user and allowedVendorNumbers in the dependency array
 
   const formatDateForMySQL = (date) => {
     return date.toISOString().replace("T", " ").slice(0, 19); // '2025-01-30 07:53:42'
@@ -118,7 +118,7 @@ function Products() {
     // Validate SKU uniqueness only if SKU is being changed (ignore if not changing SKU)
     const skuError =
       !editingProduct || data.sku !== editingProduct.sku
-        ? validateSku(data.sku, products, editingProduct?.sku)
+        ? validateSku(data.sku, inventory, editingProduct?.sku)
         : null;
 
     if (skuError) {
@@ -417,7 +417,7 @@ function Products() {
           <BulkImportModal
             onClose={() => setIsBulkImportModalOpen(false)}
             onImport={handleBulkImport}
-            existingProducts={products}
+            existingProducts={inventory}
             allowedVendorNumbers={allowedVendorNumbers}
           />
         </Modal>
@@ -462,7 +462,7 @@ function Products() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredProducts.length === 0 ? (
+                {filteredInventory.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
@@ -473,39 +473,39 @@ function Products() {
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map((product) => (
-                    <tr key={product.sku}>
+                  filteredInventory.map((inventory) => (
+                    <tr key={inventory.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-500 dark:text-white">
-                        {product.sku}
+                        {inventory.sku}
                       </td>
                       <td className="px-6 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
                         <button
-                          onClick={() => toggleNameExpansion(product.sku)}
+                          onClick={() => toggleNameExpansion(inventory.sku)}
                           className="hover:text-gray-900 dark:hover:text-white"
                         >
-                          {truncateName(product.product_name, product.sku)}
+                          {truncateName(inventory.product_name, inventory.sku)}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
-                        {product.stock_check}
+                        {inventory.stock_check}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
-                        {product.outbound}
+                        {inventory.outbound}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
-                        {product.warehouse_code}
+                        {inventory.warehouse_code}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
-                        {product.vendor_number}
+                        {inventory.vendor_number}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="relative inline-block text-left">
                           <div
                             onClick={() => {
                               setOpenActionMenu(
-                                openActionMenu === product.sku
+                                openActionMenu === inventory.sku
                                   ? null
-                                  : product.sku
+                                  : inventory.sku
                               );
                             }}
                             className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
@@ -514,7 +514,7 @@ function Products() {
                             <MoreVertical className="h-5 w-5" />
                           </div>
                         </div>
-                        {openActionMenu === product.sku && (
+                        {openActionMenu === inventory.sku && (
                           <div
                             ref={menuRef}
                             className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
@@ -526,7 +526,7 @@ function Products() {
                             >
                               <li
                                 onClick={() => {
-                                  openLogChanges(product);
+                                  openLogChanges(inventory);
                                   setOpenActionMenu(null);
                                 }}
                                 className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
@@ -538,7 +538,7 @@ function Products() {
                                 <>
                                   <li
                                     onClick={() => {
-                                      openEditModal(product);
+                                      openEditModal(inventory);
                                       setOpenActionMenu(null);
                                     }}
                                     className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
@@ -548,7 +548,7 @@ function Products() {
                                   </li>
                                   <li
                                     onClick={() => {
-                                      handleDeleteProduct(product.sku);
+                                      handleDeleteProduct(inventory.sku);
                                       setOpenActionMenu(null);
                                     }}
                                     className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"

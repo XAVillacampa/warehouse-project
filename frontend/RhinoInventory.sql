@@ -16,12 +16,19 @@ CREATE TABLE Inventory (
   height DECIMAL(5, 2) NOT NULL CHECK (height > 0),
   length DECIMAL(5, 2) NOT NULL CHECK (length > 0),
   width DECIMAL(5, 2) NOT NULL CHECK (width > 0),
-  cbm DECIMAL(5, 5) NOT NULL CHECK (cbm > 0),
+  cbm DECIMAL(10, 5) NOT NULL CHECK (cbm > 0),
   vendor_number VARCHAR(45),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_warehouse_code (warehouse_code)
 );
+
+ALTER TABLE
+  Inventory
+ADD
+  COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD
+  COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 INSERT INTO
   Inventory (
@@ -58,21 +65,27 @@ from
   inventory;
 
 CREATE TABLE Inbound_Shipments (
-  shipment_id INT AUTO_INCREMENT PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   shipping_date DATE NOT NULL,
   box_label VARCHAR(50) NOT NULL,
   sku VARCHAR(100) NOT NULL,
   warehouse_code VARCHAR(10) NOT NULL,
-  quantity INT NOT NULL CHECK (quantity >= 0),
+  item_quantity INT NOT NULL CHECK (item_quantity >= 0),
   arriving_date DATE NOT NULL,
   tracking_number VARCHAR(50) NOT NULL UNIQUE,
   vendor_number VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE,
   FOREIGN KEY (warehouse_code) REFERENCES Inventory (warehouse_code) ON DELETE CASCADE,
   FOREIGN KEY (vendor_number) REFERENCES Users (vendor_number) ON DELETE
   SET
     NULL
 );
+
+-- Run if having problems with shipment_id
+ALTER TABLE
+  `inbound_shipments` CHANGE `shipment_id` `id` INT AUTO_INCREMENT NOT NULL;
 
 select
   *
@@ -85,7 +98,7 @@ INSERT INTO
     box_label,
     sku,
     warehouse_code,
-    quantity,
+    item_quantity,
     arriving_date,
     tracking_number,
     vendor_number
@@ -124,11 +137,14 @@ CREATE TABLE Outbound_Shipments (
   country VARCHAR(255) NOT NULL,
   address1 VARCHAR(255) NOT NULL,
   address2 VARCHAR(255) NULL,
+  -- Can be left blank if not applicable
   zip_code VARCHAR(20) NOT NULL,
   city VARCHAR(100) NOT NULL,
   state VARCHAR(100) NOT NULL,
-  tracking VARCHAR(50) NOT NULL,
+  tracking_number VARCHAR(50) UNIQUE,
+  -- Can be left blank at the start, must be unique
   shipping_fee DECIMAL(10, 2) NOT NULL,
+  -- Default 0 
   note TEXT NULL,
   image_link VARCHAR(255) NULL,
   vendor_number VARCHAR(45),
@@ -137,13 +153,18 @@ CREATE TABLE Outbound_Shipments (
   FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE,
   FOREIGN KEY (warehouse_code) REFERENCES Inventory (warehouse_code) ON DELETE CASCADE,
   UNIQUE (order_id),
-  UNIQUE (tracking)
+  UNIQUE (tracking_number)
 );
 
+-- Run this if you want to add a unique constraint to the tracking column
 ALTER TABLE
   Outbound_Shipments
 MODIFY
-  COLUMN tracking VARCHAR(50) NOT NULL UNIQUE;
+  COLUMN tracking VARCHAR(50) UNIQUE;
+
+-- Run if having error in tracking number
+ALTER TABLE
+  `Outbound_Shipments` CHANGE `tracking` `tracking_number` VARCHAR(50) UNIQUE;
 
 select
   *
@@ -210,15 +231,24 @@ CREATE TABLE Claims (
   state VARCHAR(50) NOT NULL,
   tracking_number VARCHAR(50) NOT NULL,
   shipping_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  reason TEXT NOT NULL,
   status ENUM ('Solved', 'Denied', 'New', 'Claimed') NOT NULL,
+  reason TEXT NULL,
+  -- Can be left blank if not applicable
   response_action TEXT,
   invoice_link TEXT,
   note TEXT,
   vendor_number VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id) ON DELETE CASCADE,
   FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE
 );
+
+-- Run this if you want to add a unique constraint to the tracking column
+ALTER TABLE
+  Claims
+MODIFY
+  COLUMN reason TEXT NULL;
 
 select
   *
@@ -228,7 +258,7 @@ from
 INSERT INTO
   Claims (
     order_id,
-    claim_date,
+    order_date,
     sku,
     item_quantity,
     warehouse_code,

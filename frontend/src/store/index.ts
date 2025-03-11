@@ -5,9 +5,8 @@ import {
   AlertType,
   InboundShipment,
   OutboundShipment,
-  Product,
+  Inventory,
 } from "../types";
-import { calculateUnitCBM, calculateTotalCBM } from "../utils/calculations";
 import {
   fetchProductsAPI,
   addProductAPI,
@@ -24,7 +23,6 @@ import {
   deleteOutboundShipmentAPI,
   bulkImportOutboundShipmentsAPI,
 } from "../services/api";
-import { useEffect } from "react";
 
 interface AlertState {
   message: string | null;
@@ -43,12 +41,11 @@ export const useAlertStore = create<AlertState>((set) => ({
 }));
 
 interface InventoryState {
-  bulkUploadTransactions: any;
-  products: Product[];
+  inventory: Inventory[];
   outbound: OutboundShipment[];
   inbound: InboundShipment[];
-  addProduct: (product: Product) => void;
-  updateProduct: (product: Product) => void;
+  addProduct: (product: Inventory) => void;
+  updateProduct: (product: Inventory) => void;
   deleteProduct: (sku: string) => void;
   fetchProducts: () => void;
   fetchInbound: () => void;
@@ -66,8 +63,7 @@ interface InventoryState {
 export const useInventoryStore = create<InventoryState>()(
   persist(
     (set, get) => ({
-      bulkUploadTransactions: [],
-      products: [],
+      inventory: [],
       transactions: [],
       inbound: [],
       outbound: [],
@@ -77,7 +73,7 @@ export const useInventoryStore = create<InventoryState>()(
         try {
           const products = await fetchProductsAPI();
           // console.log(products);
-          set({ products });
+          set({ inventory: products });
         } catch (error) {
           console.error("Error fetching products:", error);
         }
@@ -88,7 +84,7 @@ export const useInventoryStore = create<InventoryState>()(
         try {
           const newProduct = await addProductAPI(product);
           set((state) => ({
-            products: [...state.products, newProduct],
+            inventory: [...state.inventory, newProduct],
           }));
         } catch (error) {
           console.error("Error adding product:", error);
@@ -100,16 +96,18 @@ export const useInventoryStore = create<InventoryState>()(
         try {
           const updatedProduct = await updateProductAPI(product.sku, product);
           set((state) => ({
-            products: state.products.map((p) =>
+            inventory: state.inventory.map((p) =>
               p.sku === updatedProduct.sku ? updatedProduct : p
             ),
           }));
         } catch (error) {
           // If API fails, revert the change in state
           set((state) => ({
-            products: state.products.map((p) =>
+            inventory: state.inventory.map((p) =>
               p.sku === product.sku
-                ? state.products.find((prod) => prod.sku === product.sku)
+                ? (state.inventory.find(
+                    (prod) => prod.sku === product.sku
+                  ) as Inventory)
                 : p
             ),
           }));
@@ -122,7 +120,7 @@ export const useInventoryStore = create<InventoryState>()(
         try {
           await deleteProductAPI(sku);
           set((state) => ({
-            products: state.products.filter((p) => p.sku !== sku),
+            inventory: state.inventory.filter((p) => p.sku !== sku),
           }));
         } catch (error) {
           console.error("Error deleting product:", error);

@@ -17,6 +17,7 @@ import {
   Truck,
   Download,
   Upload,
+  BaggageClaim,
 } from "lucide-react";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
@@ -48,12 +49,18 @@ const navigation: NavItem[] = [
     name: "Inbound Shipments",
     href: "/inbound-shipments",
     icon: Download,
-    roles: ["admin", "staff"],
+    roles: ["admin", "staff", "vendor"],
   },
   {
     name: "Outbound Shipments",
     href: "/outbound-shipments",
-    icon: Upload,
+    icon: Truck,
+    roles: ["admin", "staff", "vendor"],
+  },
+  {
+    name: "Claims",
+    href: "/claims",
+    icon: BaggageClaim,
     roles: ["admin", "staff"],
   },
   { name: "Users", href: "/users", icon: Users, roles: ["admin"] },

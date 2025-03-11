@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useInventoryStore } from "../store";
 import { useAuthStore } from "../store/auth";
-import { Inventory, Transaction } from "../types";
+import { Inventory, InboundShipment, OutboundShipment } from "../types";
 import Modal from "./Modal";
 import { format } from "date-fns";
 
@@ -12,26 +12,44 @@ interface LogChangesModalProps {
 }
 
 function LogChangesModal({ isOpen, onClose, product }: LogChangesModalProps) {
-  const { transactions } = useInventoryStore();
+  const { inbound, outbound } = useInventoryStore();
   const { user } = useAuthStore();
 
-  const filteredTransactions = useMemo(() => {
+  const filteredInboundShipments = useMemo(() => {
     if (!product) return [];
 
-    return transactions
+    return inbound
       .filter(
-        (t) =>
-          t.sku === product.sku &&
-          t.status === "completed" &&
+        (shipment) =>
+          shipment.sku === product.sku &&
           (user?.role === "vendor"
             ? product.vendor_number === user.vendor_number
             : true)
       )
+      .map((shipment) => ({ ...shipment, type: "inbound" }))
       .sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-  }, [product, transactions, user]);
+  }, [product, inbound, user]);
+
+  const filteredOutboundShipments = useMemo(() => {
+    if (!product) return [];
+
+    return outbound
+      .filter(
+        (shipment) =>
+          shipment.sku === product.sku &&
+          (user?.role === "vendor"
+            ? product.vendor_number === user.vendor_number
+            : true)
+      )
+      .map((shipment) => ({ ...shipment, type: "outbound" }))
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+  }, [product, outbound, user]);
 
   if (!product) return null;
 
@@ -98,65 +116,80 @@ function LogChangesModal({ isOpen, onClose, product }: LogChangesModalProps) {
 
         <div className="flow-root">
           <ul className="-mb-8">
-            {filteredTransactions.length === 0 ? (
+            {filteredInboundShipments.length === 0 &&
+            filteredOutboundShipments.length === 0 ? (
               <li className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
                 No transaction history available
               </li>
             ) : (
-              filteredTransactions.map((transaction, idx) => (
-                <li key={transaction.id}>
-                  <div className="relative pb-8">
-                    {idx !== filteredTransactions.length - 1 && (
-                      <span
-                        className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <div className="relative flex space-x-3">
-                      <div>
+              [...filteredInboundShipments, ...filteredOutboundShipments]
+                .sort(
+                  (a, b) =>
+                    new Date(b.created_at).getTime() -
+                    new Date(a.created_at).getTime()
+                )
+                .map((shipment, idx) => (
+                  <li key={shipment.id}>
+                    <div className="relative pb-8">
+                      {idx !==
+                        filteredInboundShipments.length +
+                          filteredOutboundShipments.length -
+                          1 && (
                         <span
-                          className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-gray-800 ${
-                            transaction.type === "inbound"
-                              ? "bg-green-500"
-                              : "bg-blue-500"
-                          }`}
-                        >
-                          <span className="text-white text-sm font-medium">
-                            {transaction.type === "inbound" ? "+" : "-"}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                          className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <div className="relative flex space-x-3">
                         <div>
-                          <p className="text-sm text-gray-900 dark:text-white">
-                            {transaction.type === "inbound"
-                              ? "Received"
-                              : "Shipped"}{" "}
-                            <span className="font-medium">
-                              {transaction.quantity}
-                            </span>{" "}
-                            units
-                          </p>
-                          {transaction.notes && (
-                            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                              Note: {transaction.notes}
-                            </p>
-                          )}
-                          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                            Ref: {transaction.workflow_number}
-                          </p>
+                          <span
+                            className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-gray-800 ${
+                              shipment.type === "inbound"
+                                ? "bg-green-500"
+                                : "bg-blue-500"
+                            }`}
+                          >
+                            <span className="text-white text-sm font-medium">
+                              {shipment.type === "inbound" ? "+" : "-"}
+                            </span>
+                          </span>
                         </div>
-                        <div className="whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          {format(
-                            new Date(transaction.created_at),
-                            "MMM d, yyyy HH:mm"
-                          )}
+                        <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                          <div>
+                            <p className="text-sm text-gray-900 dark:text-white">
+                              {shipment.type === "inbound"
+                                ? "Received"
+                                : "Shipped"}{" "}
+                              <span className="font-medium">
+                                {shipment.item_quantity}
+                              </span>{" "}
+                              units
+                            </p>
+                            {shipment.note && (
+                              <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                                Note: {shipment.note}
+                              </p>
+                            )}
+                            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                              Ref: {shipment.tracking_number}
+                            </p>
+                          </div>
+                          <div className="whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                            {format(
+                              new Date(shipment.created_at),
+                              "MMM d, yyyy HH:mm"
+                            )}
+                          </div>
+                          <div className="whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                            {shipment.type === "inbound"
+                              ? "Inbound"
+                              : "Outbound"}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))
+                  </li>
+                ))
             )}
           </ul>
         </div>

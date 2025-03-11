@@ -248,7 +248,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
     box_label,
     sku,
     warehouse_code,
-    quantity,
+    item_quantity,
     arriving_date,
     tracking_number,
     vendor_number,
@@ -261,7 +261,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
       !box_label ||
       !sku ||
       !warehouse_code ||
-      !quantity ||
+      !item_quantity ||
       !arriving_date ||
       !tracking_number
     ) {
@@ -278,14 +278,14 @@ app.post("/api/inbound-shipments", async (req, res) => {
       // Insert inbound shipment
       await connection.execute(
         `INSERT INTO Inbound_Shipments 
-        (shipping_date, box_label, sku, warehouse_code, quantity, arriving_date, tracking_number, vendor_number) 
+        (shipping_date, box_label, sku, warehouse_code, item_quantity, arriving_date, tracking_number, vendor_number) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           shipping_date,
           box_label,
           sku,
           warehouse_code,
-          quantity,
+          item_quantity,
           arriving_date,
           tracking_number,
           vendor_number,
@@ -297,7 +297,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
         `UPDATE Inventory 
         SET stock_check = stock_check + ? 
         WHERE sku = ?`,
-        [quantity, sku]
+        [item_quantity, sku]
       );
 
       // Commit transaction
@@ -346,7 +346,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
           box_label,
           sku,
           warehouse_code,
-          quantity,
+          item_quantity,
           arriving_date,
           tracking_number,
           vendor_number,
@@ -358,7 +358,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
           !box_label ||
           !sku ||
           !warehouse_code ||
-          !quantity ||
+          !item_quantity ||
           !arriving_date ||
           !tracking_number ||
           !vendor_number
@@ -404,14 +404,14 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
         // Insert inbound shipment
         await connection.execute(
           `INSERT INTO Inbound_Shipments 
-          (shipping_date, box_label, sku, warehouse_code, quantity, arriving_date, tracking_number, vendor_number) 
+          (shipping_date, box_label, sku, warehouse_code, item_quantity, arriving_date, tracking_number, vendor_number) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
           [
             shipping_date,
             box_label,
             sku,
             warehouse_code,
-            quantity,
+            item_quantity,
             arriving_date,
             tracking_number,
             vendor_number,
@@ -460,7 +460,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
     box_label,
     sku,
     warehouse_code,
-    quantity,
+    item_quantity,
     arriving_date,
     tracking_number,
     vendor_number,
@@ -479,7 +479,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
         .json({ success: false, message: "Inbound shipment not found" });
     }
 
-    const oldQuantity = existing[0].quantity;
+    const oldQuantity = existing[0].item_quantity;
 
     // Check if the SKU exists in inventory
     const [inventory] = await db.execute(
@@ -496,7 +496,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
     const stock_check = inventory[0].stock_check;
 
     // Adjust inventory stock if quantity has changed
-    let quantityDifference = quantity + oldQuantity;
+    let quantityDifference = item_quantity + oldQuantity;
 
     if (quantityDifference !== 0) {
       await db.execute(
@@ -510,7 +510,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
     // Update the shipment record
     await db.execute(
       `UPDATE Inbound_Shipments 
-      SET shipping_date = ?, box_label = ?, sku = ?, warehouse_code = ?, quantity = ?, 
+      SET shipping_date = ?, box_label = ?, sku = ?, warehouse_code = ?, item_quantity = ?, 
       arriving_date = ?, tracking_number = ?, vendor_number = ?
       WHERE shipment_id = ?`,
       [
@@ -518,7 +518,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
         box_label,
         sku,
         warehouse_code,
-        quantity,
+        item_quantity,
         arriving_date,
         tracking_number,
         vendor_number,
@@ -541,7 +541,7 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const [existing] = await db.query(
-      "SELECT shipment_id, sku, quantity FROM Inbound_Shipments WHERE shipment_id = ?",
+      "SELECT shipment_id, sku, item_quantity FROM Inbound_Shipments WHERE shipment_id = ?",
       [id]
     );
 
@@ -553,7 +553,7 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
     }
 
     // Get the SKU and quantity
-    const { sku, quantity } = existing[0];
+    const { sku, item_quantity } = existing[0];
 
     // Start a transaction
     const connection = await db.getConnection();
@@ -571,7 +571,7 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
         `UPDATE Inventory
         SET stock_check = stock_check - ?
         WHERE sku = ?`,
-        [quantity, sku]
+        [item_quantity, sku]
       );
 
       await connection.commit();
@@ -680,7 +680,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
     zip_code,
     city,
     state,
-    tracking,
+    tracking_number,
     shipping_fee,
     note,
     image_link,
@@ -702,7 +702,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
       !zip_code ||
       !city ||
       !state ||
-      !tracking ||
+      !tracking_number ||
       !shipping_fee ||
       !vendor_number
     ) {
@@ -756,7 +756,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
       zip_code,
       city,
       state,
-      tracking,
+      tracking_number,
       shipping_fee,
       note: noteValue,
       image_link: imageLinkValue,
@@ -771,7 +771,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
       // Insert the new outbound shipment
       await connection.execute(
         `INSERT INTO outbound_shipments 
-        (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking, shipping_fee, note, image_link, vendor_number) 
+        (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           formattedOrderDate,
@@ -787,7 +787,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
           zip_code,
           city,
           state,
-          tracking,
+          tracking_number,
           shipping_fee,
           noteValue,
           imageLinkValue,
@@ -854,7 +854,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
         zip_code,
         city,
         state,
-        tracking,
+        tracking_number,
         shipping_fee,
         note,
         image_link,
@@ -875,7 +875,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
         !zip_code ||
         !city ||
         !state ||
-        !tracking ||
+        !tracking_number ||
         !shipping_fee ||
         !vendor_number
       ) {
@@ -926,7 +926,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
       // Insert the new outbound shipment
       await connection.execute(
         `INSERT INTO outbound_shipments 
-        (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking, shipping_fee, note, image_link, vendor_number) 
+        (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           formattedOrderDate,
@@ -942,7 +942,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
           zip_code,
           city,
           state,
-          tracking,
+          tracking_number,
           shipping_fee,
           noteValue,
           imageLinkValue,
@@ -988,7 +988,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
     zip_code,
     city,
     state,
-    tracking,
+    tracking_number,
     shipping_fee,
     note,
     image_link,
@@ -1055,7 +1055,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
       zip_code,
       city,
       state,
-      tracking,
+      tracking_number,
       shipping_fee,
       note: noteValue,
       image_link: imageLinkValue,
@@ -1070,7 +1070,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
       // Update the outbound shipment
       await connection.execute(
         `UPDATE outbound_shipments 
-        SET order_date = ?, sku = ?, item_quantity = ?, warehouse_code = ?, customer_name = ?, country = ?, address1 = ?, address2 = ?, zip_code = ?, city = ?, state = ?, tracking = ?, shipping_fee = ?, note = ?, image_link = ?, vendor_number = ? 
+        SET order_date = ?, sku = ?, item_quantity = ?, warehouse_code = ?, customer_name = ?, country = ?, address1 = ?, address2 = ?, zip_code = ?, city = ?, state = ?, tracking_number = ?, shipping_fee = ?, note = ?, image_link = ?, vendor_number = ? 
         WHERE id = ?`,
         [
           formattedOrderDate,
@@ -1084,7 +1084,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
           zip_code,
           city,
           state,
-          tracking,
+          tracking_number,
           shipping_fee,
           noteValue,
           imageLinkValue,

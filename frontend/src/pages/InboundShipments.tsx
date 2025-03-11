@@ -24,7 +24,7 @@ interface InboundShipmentFormData {
   box_label: string;
   sku: string;
   warehouse_code: string;
-  quantity: number;
+  item_quantity: number;
   arriving_date: string;
   tracking_number: string;
   vendor_number?: string;
@@ -54,7 +54,7 @@ function InboundShipments() {
     formState: { errors },
   } = useForm<InboundShipmentFormData>();
   const {
-    products,
+    inventory,
     inbound,
     fetchProducts,
     fetchInbound,
@@ -103,14 +103,14 @@ function InboundShipments() {
 
   const productOptions = useMemo(
     () =>
-      products.map((product) => ({
+      inventory.map((product) => ({
         value: product.sku,
         label: `[${product.sku}] ${product.product_name}`,
         description: `Stock: ${product.stock_check} | Warehouse Code: ${product.warehouse_code}`,
         vendor_number: product.vendor_number,
         warehouse_code: product.warehouse_code,
       })),
-    [products]
+    [inventory]
   );
 
   const filteredShipments = useMemo(() => {
@@ -119,7 +119,7 @@ function InboundShipments() {
     // console.log("Is Array?", Array.isArray(allTransactions));
     return inbound
       .filter((shipment) => {
-        const product = products.find((p) => p.sku === shipment.sku);
+        const product = inventory.find((p) => p.sku === shipment.sku);
         const searchString =
           `${product?.sku} ${product?.product_name} ${shipment.tracking_number} ${product?.vendor_number}`.toLowerCase();
 
@@ -129,7 +129,7 @@ function InboundShipments() {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-  }, [inbound, products, searchTerm]);
+  }, [inbound, inventory, searchTerm]);
 
   // Format the date for MySQL
   const formatDateForMySQL = (date) => {
@@ -145,7 +145,7 @@ function InboundShipments() {
 
     // Create a shipment object with necessary details.
     const shipment: InboundShipment = {
-      shipment_id: editingShipment?.shipment_id || 0,
+      id: editingShipment?.id || 0,
       ...data,
       shipping_date: formattedShippingDate, // Assign the formatted Date string
       created_at: editingShipment?.created_at || formatDateForMySQL(new Date()), // Preserve original creation date if editing
@@ -170,10 +170,10 @@ function InboundShipments() {
       setAlert("Inbound shipment updated successfully", "success"); // Show success alert
     } else {
       // For a new shipment, first find the related product by SKU
-      const product = products.find((p) => p.sku === data.sku);
+      const product = inventory.find((p) => p.sku === data.sku);
 
       // Check if the product quantity is sufficient for the inbound shipment
-      if (product && product.stock_check < data.quantity) {
+      if (product && product.stock_check < data.item_quantity) {
         setAlert(
           `Insufficient quantity for SKU ${data.sku} (available: ${product.stock_check})`,
           "error"
@@ -219,7 +219,7 @@ function InboundShipments() {
     setValue("box_label", shipment.box_label);
     setValue("sku", shipment.sku);
     setValue("warehouse_code", shipment.warehouse_code);
-    setValue("quantity", shipment.quantity);
+    setValue("item_quantity", shipment.item_quantity);
     setValue("arriving_date", shipment.arriving_date);
     setValue("tracking_number", shipment.tracking_number);
     setValue("vendor_number", shipment.vendor_number);
@@ -236,8 +236,8 @@ function InboundShipments() {
   const handleDelete = async (shipment: InboundShipment) => {
     try {
       console.log("Deleting shipment:", shipment);
-      if (!shipment.shipment_id) throw new Error("Shipment ID not found");
-      await deleteInbound(shipment.shipment_id);
+      if (!shipment.id) throw new Error("Shipment ID not found");
+      await deleteInbound(shipment.id);
       setAlert("Inbound shipment deleted successfully", "success");
     } catch (error) {
       console.error("Error deleting inbound shipment:", error);
@@ -350,7 +350,7 @@ function InboundShipments() {
             </label>
             <input
               type="number"
-              {...register("quantity", { required: true, min: 1 })}
+              {...register("item_quantity", { required: true, min: 1 })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
@@ -400,7 +400,7 @@ function InboundShipments() {
         <BulkInboundShipmentModal
           onClose={() => setIsBulkImportModalOpen(false)}
           onImport={handleBulkImport}
-          products={products}
+          products={inventory}
         />
       </Modal>
 
@@ -446,11 +446,11 @@ function InboundShipments() {
                   </tr>
                 ) : (
                   filteredShipments.map((shipments) => {
-                    const product = products.find(
+                    const product = inventory.find(
                       (p) => p.sku === shipments.sku
                     );
                     return (
-                      <tr key={shipments.shipment_id}>
+                      <tr key={shipments.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                           {new Date(
                             shipments.shipping_date
@@ -463,7 +463,7 @@ function InboundShipments() {
                           {shipments.sku}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
-                          {shipments.quantity}
+                          {shipments.item_quantity}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                           {new Date(
@@ -479,9 +479,9 @@ function InboundShipments() {
                               onClick={() =>
                                 setOpenActionMenu(
                                   openActionMenu ===
-                                    shipments.shipment_id?.toString()
+                                    shipments.id?.toString()
                                     ? null
-                                    : shipments.shipment_id?.toString()
+                                    : shipments.id?.toString()
                                 )
                               }
                               className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 text-center"
@@ -492,7 +492,7 @@ function InboundShipments() {
 
                           {/* Action menu */}
                           {openActionMenu ===
-                            shipments.shipment_id?.toString() && (
+                            shipments.id?.toString() && (
                             <div
                               ref={menuRef}
                               className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
