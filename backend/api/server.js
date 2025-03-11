@@ -532,7 +532,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
 
     // Check if the shipment exists
     const [existing] = await db.execute(
-      "SELECT * FROM Inbound_Shipments WHERE shipment_id = ?",
+      "SELECT * FROM Inbound_Shipments WHERE id = ?",
       [id]
     );
 
@@ -575,7 +575,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
       `UPDATE Inbound_Shipments 
       SET shipping_date = ?, box_label = ?, sku = ?, warehouse_code = ?, item_quantity = ?, 
       arriving_date = ?, tracking_number = ?, vendor_number = ?
-      WHERE shipment_id = ?`,
+      WHERE id = ?`,
       [
         shipping_date,
         box_label,
@@ -604,7 +604,7 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const [existing] = await db.query(
-      "SELECT shipment_id, sku, item_quantity FROM Inbound_Shipments WHERE shipment_id = ?",
+      "SELECT id, sku, item_quantity FROM Inbound_Shipments WHERE id = ?",
       [id]
     );
 
@@ -630,7 +630,7 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
 
     try {
       await connection.execute(
-        "DELETE FROM Inbound_Shipments WHERE shipment_id = ?",
+        "DELETE FROM Inbound_Shipments WHERE id = ?",
         [id]
       );
       await connection.execute(

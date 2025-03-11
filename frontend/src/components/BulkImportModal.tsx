@@ -94,7 +94,17 @@ function BulkImportModal({
   };
 
   const downloadTemplate = () => {
-    const headers = ["sku", "name", "quantity", "minStockLevel", "warehouse_code", "vendor_number", "weight", "height", "length", "width", "unit_cbm"].join(",");
+    const headers = [
+      "product_name",
+      "sku",
+      "warehouse_code",
+      "weight",
+      "height",
+      "length",
+      "width",
+      "cbm",
+      "vendor_number",
+    ]
 
     let exampleData = "";
     if (isUpdate && existingProducts.length > 0) {
@@ -103,25 +113,24 @@ function BulkImportModal({
         .slice(0, 2)
         .map((product) =>
           [
+            product.product_name,
             product.sku,
-            product.name,
-            product.quantity,
-            product.minStockLevel,
             product.warehouse_code,
-            product.vendor_number,
+            product.stock_check,
+            product.outbound,
             product.weight,
             product.height,
             product.length,
             product.width,
-            product.unit_cbm,
+            product.cbm,
+            product.vendor_number,
           ].join(",")
         )
         .join("\n");
     } else {
       // Use example data
       exampleData = [
-        "F123,Product F,100,20,WC2,V001,15,20,30,40,.045",
-        "G123,Product G,100,20,WC3,V001,15,20,30,40,.24",
+        "Rhino1, A123, WC1, 15, 15, 15, 15, 15, V001",
       ].join("\n");
     }
 

@@ -87,7 +87,7 @@ function BulkInboundShipmentModal({
       "shipping_date",
       "box_label",
       "sku (select from dropdown)",
-      "quantity",
+      "item_quantity",
       "arriving_date",
       "tracking_number",
       "vendor_number",

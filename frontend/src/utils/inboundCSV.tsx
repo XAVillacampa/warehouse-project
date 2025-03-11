@@ -27,8 +27,8 @@ export const parseInboundShipmentCSV = (
           case "sku (select from dropdown)":
             shipment.sku = values[index];
             break;
-          case "quantity":
-            shipment.quantity = Number(values[index]);
+          case "item_quantity":
+            shipment.item_quantity = Number(values[index]);
             break;
           case "arriving_date":
             shipment.arriving_date = formatDateForMySQL(new Date(values[index]));
@@ -69,7 +69,7 @@ export const validateInboundShipments = (
       errors.push(`Line ${lineNumber}: SKU not found in inventory`);
 
     // Validate quantity
-    if (!shipment.quantity || shipment.quantity <= 0)
+    if (!shipment.item_quantity || shipment.item_quantity <= 0)
       errors.push(`Line ${lineNumber}: Invalid quantity`);
 
     // Validate required fields

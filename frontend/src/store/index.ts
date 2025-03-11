@@ -165,12 +165,12 @@ export const useInventoryStore = create<InventoryState>()(
       updateInbound: async (inbound) => {
         try {
           const updatedInbound = await updateInboundShipmentAPI(
-            inbound.shipment_id,
+            inbound.id,
             inbound
           );
           set((state) => ({
             inbound: state.inbound.map((i) =>
-              i.shipment_id === updatedInbound.shipment_id ? updatedInbound : i
+              i.id === updatedInbound.id ? updatedInbound : i
             ),
           }));
         } catch (error) {
@@ -183,7 +183,7 @@ export const useInventoryStore = create<InventoryState>()(
         try {
           await deleteInboundShipmentAPI(id);
           set((state) => ({
-            inbound: state.inbound.filter((i) => i.shipment_id !== id),
+            inbound: state.inbound.filter((i) => i.id !== id),
           }));
         } catch (error) {
           console.error("Error deleting inbound shipment:", error);

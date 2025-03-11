@@ -14,23 +14,20 @@ export const parseCSV = (csvText: string): Product[] => {
       headers.forEach((header, index) => {
         const value = values[index];
         switch (header.toLowerCase()) {
+          case "product_name":
+            product.product_name = value;
+            break;
           case "sku":
             product.sku = value;
-            break;
-          case "name":
-            product.name = value;
-            break;
-          case "quantity":
-            product.quantity = Number(value);
-            break;
-          case "minStockLevel":
-            product.minStockLevel = Number(value);
             break;
           case "warehouse_code":
             product.warehouse_code = value;
             break;
-          case "vendor_number":
-            product.vendor_number = value;
+          case "inventory":
+            product.stock_check = Number(value);
+            break;
+          case "outbound":
+            product.outbound = Number(value);
             break;
           case "weight":
             product.weight = Number(value);
@@ -44,8 +41,11 @@ export const parseCSV = (csvText: string): Product[] => {
           case "width":
             product.width = Number(value);
             break;
-          case "unit_cbm":
-            product.unit_cbm = Number(value);
+          case "cbm":
+            product.cbm = Number(value);
+            break;
+          case "vendor_number":
+            product.vendor_number = value;
             break;
         }
       });
@@ -55,7 +55,7 @@ export const parseCSV = (csvText: string): Product[] => {
         unitOfMeasurement: "units",
         createdAt: new Date(),
         updatedAt: new Date(),
-        cbm: (product.unit_cbm || 0) * (product.quantity || 0),
+        cbm: (product.cbm || 0) * (product.stock_check || 0),
         ...product,
       } as Product;
     });
@@ -95,24 +95,24 @@ export const validateProducts = (
       }
     }
 
-    if (!product.name) 
+    if (!product.product_name)
       errors.push(`Line ${lineNumber}: Name is required`);
+    if (!product.sku) 
+      errors.push(`Line ${lineNumber}: SKU is required`);
+    if (!product.warehouse_code)
+      errors.push(`Line ${lineNumber}: Warehouse code is required`);
+    if (!product.weight)
+      errors.push(`Line ${lineNumber}: Weight is required`);
+    if (!product.height)
+      errors.push(`Line ${lineNumber}: Height is required`);
+    if (!product.length)
+      errors.push(`Line ${lineNumber}: Length is required`);
+    if (!product.width)
+      errors.push(`Line ${lineNumber}: Width is required`);
+    if (!product.cbm)
+      errors.push(`Line ${lineNumber}: Unit CBM is required`);
     if (!product.vendor_number)
-      errors.push(`Line ${lineNumber}: Vendor Number is required`);
-    if (product.quantity < 0)
-      errors.push(`Line ${lineNumber}: Quantity must be positive`);
-    if (product.minStockLevel < 0)
-      errors.push(`Line ${lineNumber}: Min Stock Level must be positive`);
-    if (product.weight <= 0)
-      errors.push(`Line ${lineNumber}: Weight must be greater than 0`);
-    if (product.height <= 0)
-      errors.push(`Line ${lineNumber}: Height must be greater than 0`);
-    if (product.length <= 0)
-      errors.push(`Line ${lineNumber}: Length must be greater than 0`);
-    if (product.width <= 0)
-      errors.push(`Line ${lineNumber}: Width must be greater than 0`);
-    if (product.unit_cbm <= 0)
-      errors.push(`Line ${lineNumber}: Unit CBM must be greater than 0`);
+      errors.push(`Line ${lineNumber}: Vendor number is required`);
   });
 
   return errors;
