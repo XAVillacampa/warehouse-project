@@ -170,16 +170,8 @@ function InboundShipments() {
       setAlert("Inbound shipment updated successfully", "success"); // Show success alert
     } else {
       // For a new shipment, first find the related product by SKU
-      const product = inventory.find((p) => p.sku === data.sku);
+      inventory.find((p) => p.sku === data.sku);
 
-      // Check if the product quantity is sufficient for the inbound shipment
-      if (product && product.stock_check < data.item_quantity) {
-        setAlert(
-          `Insufficient quantity for SKU ${data.sku} (available: ${product.stock_check})`,
-          "error"
-        );
-        return;
-      }
 
       // Add the new shipment to the store
       try {
