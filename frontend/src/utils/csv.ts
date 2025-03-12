@@ -14,44 +14,40 @@ export const parseCSV = (csvText: string): Product[] => {
       headers.forEach((header, index) => {
         const value = values[index];
         switch (header.toLowerCase()) {
-          case "product_name":
+          case "product":
             product.product_name = value;
             break;
           case "sku":
             product.sku = value;
             break;
-          case "warehouse_code":
+          case "warehouse code":
             product.warehouse_code = value;
             break;
           case "inventory":
             product.stock_check = Number(value);
             break;
-          case "outbound":
-            product.outbound = Number(value);
-            break;
-          case "weight":
+          case "weight (lbs)":
             product.weight = Number(value);
             break;
-          case "height":
+          case "h (in)":
             product.height = Number(value);
             break;
-          case "length":
+          case "l (in)":
             product.length = Number(value);
             break;
-          case "width":
+          case "w (in)":
             product.width = Number(value);
             break;
           case "cbm":
             product.cbm = Number(value);
             break;
-          case "vendor_number":
+          case "vendor number":
             product.vendor_number = value;
             break;
         }
       });
 
       return {
-        //id: crypto.randomUUID(), // This will be replaced if updating existing product
         unitOfMeasurement: "units",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -96,7 +92,7 @@ export const validateProducts = (
     }
 
     if (!product.product_name)
-      errors.push(`Line ${lineNumber}: Name is required`);
+      errors.push(`Line ${lineNumber}: Product is required`);
     if (!product.sku) 
       errors.push(`Line ${lineNumber}: SKU is required`);
     if (!product.warehouse_code)

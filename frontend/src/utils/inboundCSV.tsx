@@ -27,6 +27,9 @@ export const parseInboundShipmentCSV = (
           case "sku (select from dropdown)":
             shipment.sku = values[index];
             break;
+          case "warehouse_code":
+            shipment.warehouse_code = values[index];
+            break;
           case "item_quantity":
             shipment.item_quantity = Number(values[index]);
             break;
@@ -38,9 +41,6 @@ export const parseInboundShipmentCSV = (
             break;
           case "vendor_number":
             shipment.vendor_number = values[index];
-            break;
-          case "warehouse_code":
-            shipment.warehouse_code = values[index];
             break;
           default:
             break;

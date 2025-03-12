@@ -7,7 +7,7 @@ interface BulkImportModalProps {
   onClose: () => void;
   onImport: (products: Product[], isUpdate: boolean) => void;
   existingProducts: Product[];
-  allowedVendorNumbers: string[]; 
+  allowedVendorNumbers: string[];
 }
 
 function BulkImportModal({
@@ -38,7 +38,7 @@ function BulkImportModal({
         products.forEach((product, index) => {
           if (!allowedVendorNumbers.includes(product.vendor_number)) {
             validationErrors.push(
-              `Line ${index + 2}: vendor_umber ${product.vendor_number} is not allowed for your account`
+              `Line ${index + 2}: vendor_number ${product.vendor_number} is not allowed for your account`
             );
           }
         });
@@ -64,7 +64,6 @@ function BulkImportModal({
       console.log("Imported products:", products);
       console.log(isUpdate);
       onImport(products, isUpdate);
-      
 
       onClose();
     } catch (error) {
@@ -77,7 +76,6 @@ function BulkImportModal({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
     const file = e.dataTransfer.files[0];
     if (file && file.type === "text/csv") {
       handleFile(file);
@@ -95,16 +93,17 @@ function BulkImportModal({
 
   const downloadTemplate = () => {
     const headers = [
-      "product_name",
-      "sku",
-      "warehouse_code",
-      "weight",
-      "height",
-      "length",
-      "width",
-      "cbm",
-      "vendor_number",
-    ]
+      "Product",
+      "SKU",
+      "Warehouse Code",
+      "Inventory",
+      "Weight (Lbs)",
+      "H (in)",
+      "L (in)",
+      "W (in)",
+      "CBM",
+      "Vendor Number",
+    ].join(",");
 
     let exampleData = "";
     if (isUpdate && existingProducts.length > 0) {
@@ -117,7 +116,6 @@ function BulkImportModal({
             product.sku,
             product.warehouse_code,
             product.stock_check,
-            product.outbound,
             product.weight,
             product.height,
             product.length,
@@ -130,7 +128,7 @@ function BulkImportModal({
     } else {
       // Use example data
       exampleData = [
-        "Rhino1, A123, WC1, 15, 15, 15, 15, 15, V001",
+        "Rhino1, A123, WC1, 15, 15, 15, 15, 15, 15, V001",
       ].join("\n");
     }
 

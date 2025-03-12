@@ -381,7 +381,7 @@ function Products() {
             </label>
             <input
               type="number"
-              step="0.001"
+              step="0.0000000001"
               {...register("cbm", { required: true, min: 0 })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
