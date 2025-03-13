@@ -5,30 +5,28 @@ USE `ItemsDB`;
 
 drop database `ItemsDB`;
 
-CREATE TABLE Inventory (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  product_name VARCHAR(255) NOT NULL,
-  sku VARCHAR(100) NOT NULL UNIQUE,
-  warehouse_code VARCHAR(10) NOT NULL,
-  stock_check INT NOT NULL DEFAULT 0,
-  outbound INT NOT NULL DEFAULT 0,
-  weight DECIMAL(5, 2) NOT NULL CHECK (weight > 0),
-  height DECIMAL(5, 2) NOT NULL CHECK (height > 0),
-  length DECIMAL(5, 2) NOT NULL CHECK (length > 0),
-  width DECIMAL(5, 2) NOT NULL CHECK (width > 0),
-  cbm DECIMAL(10, 5) NOT NULL CHECK (cbm > 0),
-  vendor_number VARCHAR(45),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_warehouse_code (warehouse_code)
-);
+CREATE TABLE
+  Inventory (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(255) NOT NULL,
+    sku VARCHAR(100) NOT NULL UNIQUE,
+    warehouse_code VARCHAR(10) NOT NULL,
+    stock_check INT NOT NULL DEFAULT 0,
+    outbound INT NOT NULL DEFAULT 0,
+    weight DECIMAL(5, 2) NOT NULL CHECK (weight > 0),
+    height DECIMAL(5, 2) NOT NULL CHECK (height > 0),
+    length DECIMAL(5, 2) NOT NULL CHECK (length > 0),
+    width DECIMAL(5, 2) NOT NULL CHECK (width > 0),
+    cbm DECIMAL(10, 5) NOT NULL CHECK (cbm > 0),
+    vendor_number VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_warehouse_code (warehouse_code)
+  );
 
-ALTER TABLE
-  Inventory
-ADD
-  COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-ADD
-  COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE Inventory
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 INSERT INTO
   Inventory (
@@ -64,28 +62,26 @@ select
 from
   inventory;
 
-CREATE TABLE Inbound_Shipments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  shipping_date DATE NOT NULL,
-  box_label VARCHAR(50) NOT NULL,
-  sku VARCHAR(100) NOT NULL,
-  warehouse_code VARCHAR(10) NOT NULL,
-  item_quantity INT NOT NULL CHECK (item_quantity >= 0),
-  arriving_date DATE NOT NULL,
-  tracking_number VARCHAR(50) NOT NULL UNIQUE,
-  vendor_number VARCHAR(45),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE,
-  FOREIGN KEY (warehouse_code) REFERENCES Inventory (warehouse_code) ON DELETE CASCADE,
-  FOREIGN KEY (vendor_number) REFERENCES Users (vendor_number) ON DELETE
-  SET
-    NULL
-);
+CREATE TABLE
+  Inbound_Shipments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shipping_date DATE NOT NULL,
+    box_label VARCHAR(50) NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    warehouse_code VARCHAR(10) NOT NULL,
+    item_quantity INT NOT NULL CHECK (item_quantity >= 0),
+    arriving_date DATE NOT NULL,
+    tracking_number VARCHAR(50) NOT NULL UNIQUE,
+    vendor_number VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE,
+    FOREIGN KEY (warehouse_code) REFERENCES Inventory (warehouse_code) ON DELETE CASCADE,
+    FOREIGN KEY (vendor_number) REFERENCES Users (vendor_number) ON DELETE SET NULL
+  );
 
 -- Run if having problems with shipment_id
-ALTER TABLE
-  `inbound_shipments` CHANGE `shipment_id` `id` INT AUTO_INCREMENT NOT NULL;
+ALTER TABLE `inbound_shipments` CHANGE `shipment_id` `id` INT AUTO_INCREMENT NOT NULL;
 
 select
   *
@@ -125,46 +121,41 @@ VALUES
     'V001'
   );
 
-CREATE TABLE Outbound_Shipments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  order_date DATE NOT NULL,
-  order_id VARCHAR(20) NOT NULL,
-  sku VARCHAR(100) NOT NULL,
-  item_quantity INT NOT NULL DEFAULT 1,
-  warehouse_code VARCHAR(10) NOT NULL,
-  stock_check INT NOT NULL,
-  customer_name VARCHAR(100) NOT NULL,
-  country VARCHAR(255) NOT NULL,
-  address1 VARCHAR(255) NOT NULL,
-  address2 VARCHAR(255) NULL,
-  -- Can be left blank if not applicable
-  zip_code VARCHAR(20) NOT NULL,
-  city VARCHAR(100) NOT NULL,
-  state VARCHAR(100) NOT NULL,
-  tracking_number VARCHAR(50) UNIQUE,
-  -- Can be left blank at the start, must be unique
-  shipping_fee DECIMAL(10, 2) NOT NULL,
-  -- Default 0 
-  note TEXT NULL,
-  image_link VARCHAR(255) NULL,
-  vendor_number VARCHAR(45),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE,
-  FOREIGN KEY (warehouse_code) REFERENCES Inventory (warehouse_code) ON DELETE CASCADE,
-  UNIQUE (order_id),
-  UNIQUE (tracking_number)
-);
+CREATE TABLE
+  Outbound_Shipments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_date DATE NOT NULL,
+    order_id VARCHAR(20) NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    item_quantity INT NOT NULL DEFAULT 1,
+    warehouse_code VARCHAR(10) NOT NULL,
+    stock_check INT NOT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    country VARCHAR(255) NOT NULL,
+    address1 VARCHAR(255) NOT NULL,
+    address2 VARCHAR(255) NULL,
+    -- Can be left blank if not applicable
+    zip_code VARCHAR(20) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    tracking_number VARCHAR(50) UNIQUE NULL,
+    shipping_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    note TEXT NULL,
+    image_link VARCHAR(255) NULL,
+    vendor_number VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE,
+    FOREIGN KEY (warehouse_code) REFERENCES Inventory (warehouse_code) ON DELETE CASCADE,
+    UNIQUE (order_id),
+    UNIQUE (tracking_number)
+  );
 
 -- Run this if you want to add a unique constraint to the tracking column
-ALTER TABLE
-  Outbound_Shipments
-MODIFY
-  COLUMN tracking VARCHAR(50) UNIQUE;
+ALTER TABLE Outbound_Shipments MODIFY COLUMN tracking_number VARCHAR(50) UNIQUE NULL;
 
 -- Run if having error in tracking number
-ALTER TABLE
-  `Outbound_Shipments` CHANGE `tracking` `tracking_number` VARCHAR(50) UNIQUE;
+ALTER TABLE `Outbound_Shipments` CHANGE `tracking` `tracking_number` VARCHAR(50) UNIQUE;
 
 select
   *
@@ -214,41 +205,39 @@ VALUES
     'V001'
   );
 
-CREATE TABLE Claims (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  order_id VARCHAR(20) NOT NULL,
-  order_date DATE NOT NULL,
-  sku VARCHAR(100) NOT NULL,
-  item_quantity INT NOT NULL DEFAULT 1,
-  warehouse_code VARCHAR(10) NOT NULL,
-  stock_check INT DEFAULT 0,
-  customer_name VARCHAR(255) NOT NULL,
-  country VARCHAR(50) NOT NULL,
-  address1 VARCHAR(255) NOT NULL,
-  address2 VARCHAR(255),
-  zip_code VARCHAR(20) NOT NULL,
-  city VARCHAR(100) NOT NULL,
-  state VARCHAR(50) NOT NULL,
-  tracking_number VARCHAR(50) NOT NULL,
-  shipping_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  status ENUM ('Solved', 'Denied', 'New', 'Claimed') NOT NULL,
-  reason TEXT NULL,
-  -- Can be left blank if not applicable
-  response_action TEXT,
-  invoice_link TEXT,
-  note TEXT,
-  vendor_number VARCHAR(45),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id) ON DELETE CASCADE,
-  FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE
-);
+CREATE TABLE
+  Claims (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id VARCHAR(20) NOT NULL,
+    order_date DATE NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    item_quantity INT NOT NULL DEFAULT 1,
+    warehouse_code VARCHAR(10) NOT NULL,
+    stock_check INT DEFAULT 0,
+    customer_name VARCHAR(255) NOT NULL,
+    country VARCHAR(50) NOT NULL,
+    address1 VARCHAR(255) NOT NULL,
+    address2 VARCHAR(255),
+    zip_code VARCHAR(20) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(50) NOT NULL,
+    tracking_number VARCHAR(50) NOT NULL,
+    shipping_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    status ENUM ('Solved', 'Denied', 'New', 'Claimed') NOT NULL,
+    reason TEXT NULL,
+    -- Can be left blank if not applicable
+    response_action TEXT,
+    invoice_link TEXT,
+    note TEXT,
+    vendor_number VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id) ON DELETE CASCADE,
+    FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE
+  );
 
 -- Run this if you want to add a unique constraint to the tracking column
-ALTER TABLE
-  Claims
-MODIFY
-  COLUMN reason TEXT NULL;
+ALTER TABLE Claims MODIFY COLUMN reason TEXT NULL;
 
 select
   *
@@ -304,19 +293,20 @@ VALUES
     'V001'
   );
 
-CREATE TABLE Users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(50) NOT NULL UNIQUE,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  password CHAR(100) NOT NULL,
-  role ENUM ('admin', 'vendor', 'staff') NOT NULL,
-  vendor_number VARCHAR(50) NULL,
-  activity_status ENUM ('active', 'suspended') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_vendor_number (vendor_number)
-);
+CREATE TABLE
+  Users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(50) NOT NULL UNIQUE,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password CHAR(100) NOT NULL,
+    role ENUM ('admin', 'vendor', 'staff') NOT NULL,
+    vendor_number VARCHAR(50) NULL,
+    activity_status ENUM ('active', 'suspended') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_vendor_number (vendor_number)
+  );
 
 select
   *
@@ -350,14 +340,32 @@ VALUES
     'active'
   );
 
-CREATE TABLE OrderIdCounter (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  date DATE NOT NULL,
-  counter INT NOT NULL
-);
+CREATE TABLE
+  OrderIdCounter (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL,
+    counter INT NOT NULL
+  );
 
 -- Initialize the counter with a starting value
 INSERT INTO
   OrderIdCounter (date, counter)
 VALUES
-  (CURDATE(), 0);
+  (CURDATE (), 0);
+
+CREATE TABLE
+  billing (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id VARCHAR(20) NOT NULL, -- Foreign key to Outbound_Shipments table
+    vendor_number VARCHAR(50),
+    shipping_fee DECIMAL(10, 2),
+    billing_date DATE,
+    notes TEXT,
+    status ENUM ('Pending', 'Paid', 'Refunded', 'Cancelled') DEFAULT 'Pending',
+    paid_on DATE NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id)
+  );
+
+DROP TABLE billing;

@@ -17,7 +17,7 @@ import { useBillingStore } from "../store/billing";
 import { useInventoryStore, useAlertStore } from "../store";
 import { useAuthStore } from "../store/auth";
 import BulkBillingModal from "../components/BulkBillingModal";
-import { fetchWorkflowsAPI } from "../services/api";
+// import { fetchWorkflowsAPI } from "../services/api";
 import { set } from "date-fns";
 
 interface BillingFormData {
@@ -67,21 +67,21 @@ function Claims() {
     cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   };
 
-  useEffect(() => {
-    const fetchWorkflows = async () => {
-      const workflows = await fetchWorkflowsAPI();
-      // console.log("Fetched workflows:", workflows); // Debugging log
+  // useEffect(() => {
+  //   const fetchWorkflows = async () => {
+  //     const workflows = await fetchWorkflowsAPI();
+  //     // console.log("Fetched workflows:", workflows); // Debugging log
 
-      setWorkflowOptions(
-        workflows.map((workflow) => ({
-          value: workflow.workflow_number,
-          label: workflow.workflow_number,
-          vendor_number: workflow.vendor_number || "", // Ensure it's never null
-        }))
-      );
-    };
-    fetchWorkflows();
-  }, []);
+  //     setWorkflowOptions(
+  //       workflows.map((workflow) => ({
+  //         value: workflow.workflow_number,
+  //         label: workflow.workflow_number,
+  //         vendor_number: workflow.vendor_number || "", // Ensure it's never null
+  //       }))
+  //     );
+  //   };
+  //   fetchWorkflows();
+  // }, []);
 
   // Fetch billings data using useEffect
   useEffect(() => {

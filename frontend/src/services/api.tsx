@@ -379,18 +379,6 @@ export const fetchBillingsAPI = async () => {
   }
 };
 
-// Fetch all workflow numbers
-export const fetchWorkflowsAPI = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/workflows`);
-    // console.log("Fetched workflow numbers response: ", response.data)
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching workflow numbers:", error);
-    return [];
-  }
-};
-
 // Add a new billing
 export const addBillingAPI = async (billing) => {
   try {
@@ -520,10 +508,10 @@ export const cancelBillingAPI = async (billingId) => {
         },
       }
     );
-    console.log("Mark billing as paid response:", response.data); // Log for debugging
+    console.log("Cancel billing response:", response.data); // Log for debugging
 
     if (!response || !response.data) {
-      throw new Error("Invalid response from markBillingAsPaidAPI");
+      throw new Error("Invalid response from cancelBillingAPI");
     }
     return response.data;
   } catch (error) {

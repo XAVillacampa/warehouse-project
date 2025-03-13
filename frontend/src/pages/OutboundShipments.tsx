@@ -11,9 +11,10 @@ import {
 import Modal from "../components/Modal";
 import SearchableSelect from "../components/SearchableSelect";
 import { useForm, Controller } from "react-hook-form";
-import { OutboundShipment, Inventory } from "../types";
+import { OutboundShipment, Inventory, Billing } from "../types";
 import { useInventoryStore, useAlertStore } from "../store";
 import { useAuthStore } from "../store/auth";
+import { useBillingStore } from "../store/billing";
 import BulkOutboundShipmentModal from "../components/BulkOutboundShipmentModal";
 
 interface OutboundShipmentFormData {
@@ -78,6 +79,7 @@ function OutboundShipments() {
     deleteOutbound,
     bulkUploadOutbound,
   } = useInventoryStore();
+  const { addBilling } = useBillingStore.getState();
   const { setAlert } = useAlertStore();
   const { user } = useAuthStore();
   const isVendor = user?.role === "vendor";
@@ -178,7 +180,7 @@ function OutboundShipments() {
       created_at: editingShipment?.created_at || formatDateForMySQL(new Date()), // Preserve original creation date if editing
       updated_at: formatDateForMySQL(new Date()), // Set the updated date to now
       note: data.note || "",
-      tracking_number: data.tracking_number || "", // Ensure tracking_number is always a string
+      tracking_number: data.tracking_number ?? "", // Ensure tracking_number can be null
       shipping_fee: data.shipping_fee ?? 0, // Ensure shipping_fee is always a number
     };
 
@@ -235,11 +237,29 @@ function OutboundShipments() {
       };
 
       try {
-        await updateOutbound(updatedShipment);
+        updateOutbound(updatedShipment);
         setAlert(
           "Tracking number and shipping fee added successfully",
           "success"
         );
+
+        // Add a new billing entry
+        const newBilling: Billing = {
+          id: 0, // Assuming 0 or a placeholder value, adjust as necessary
+          order_id: currentShipment.order_id,
+          vendor_number: currentShipment.vendor_number,
+          shipping_fee: data.shipping_fee,
+          billing_date: formatDateForMySQL(new Date()),
+          notes: currentShipment.note || "",
+          status: "Pending",
+          paid_on: null,
+          created_at: formatDateForMySQL(new Date()),
+          updated_at: formatDateForMySQL(new Date()),
+        };
+
+        addBilling(newBilling); // Add the billing using the store
+        setAlert("Billing added successfully", "success");
+
         closeAddTrackingModal();
       } catch (error) {
         console.error("Error adding tracking number and shipping fee:", error);
@@ -276,8 +296,9 @@ function OutboundShipments() {
     setValue("zip_code", shipment.zip_code);
     setValue("city", shipment.city);
     setValue("state", shipment.state);
-    setValue("tracking_number", shipment.tracking_number);
+    setValue("tracking_number", shipment.tracking_number || "");
     resetTracking();
+    setValue("shipping_fee", shipment.shipping_fee || 0.0);
     setValue("note", shipment.note || "");
     setValue("image_link", shipment.image_link || "");
     setValue("vendor_number", shipment.vendor_number);
@@ -303,10 +324,16 @@ function OutboundShipments() {
     }
   };
 
+  const openNewOutboundModal = () => {
+    reset();
+    setValue("shipping_fee", 0.0);
+    setIsModalOpen(true);
+  };
+
   const openAddTrackingModal = (shipment: OutboundShipment) => {
     setCurrentShipment(shipment);
-    setValue("tracking_number", shipment.tracking_number || "");
-    setValue("shipping_fee", shipment.shipping_fee || 0);
+    setValueTracking("tracking_number", shipment.tracking_number || "");
+    setValueTracking("shipping_fee", shipment.shipping_fee || 0);
     setIsAddTrackingModalOpen(true);
   };
 
@@ -324,9 +351,7 @@ function OutboundShipments() {
         </h1>
         <div className="flex space-x-3">
           <button
-            onClick={() => {
-              setIsModalOpen(true);
-            }}
+            onClick={openNewOutboundModal}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
             <ArrowUpCircle className="h-5 w-5 mr-2" />
@@ -506,7 +531,7 @@ function OutboundShipments() {
             </label>
             <input
               type="text"
-              {...register("tracking_number")} // No need for validation
+              {...register("tracking_number")} // No validation required
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
@@ -517,7 +542,7 @@ function OutboundShipments() {
             <input
               type="number"
               step="0.01"
-              {...register("shipping_fee", { required: true, min: 0 })}
+              {...register("shipping_fee", { min: 0.0 })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
@@ -574,7 +599,7 @@ function OutboundShipments() {
             </label>
             <input
               type="text"
-              {...register("tracking_number", { required: true })}
+              {...registerTracking("tracking_number", { required: true })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
             {errors.tracking_number && (
@@ -588,7 +613,7 @@ function OutboundShipments() {
             <input
               type="number"
               step="0.01"
-              {...register("shipping_fee", { required: true, min: 0 })}
+              {...registerTracking("shipping_fee", { required: true, min: 0 })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
             {errors.shipping_fee && (
@@ -687,13 +712,18 @@ function OutboundShipments() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="relative inline-block text-left">
                             <button
-                              onClick={() =>
+                              onClick={() => {
                                 setOpenActionMenu(
                                   openActionMenu === shipments.id?.toString()
                                     ? null
                                     : shipments.id?.toString()
-                                )
-                              }
+                                );
+                                // console.log(
+                                //   "Open action menu:",
+                                //   openActionMenu,
+                                //   shipments
+                                // );
+                              }}
                               className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 text-center"
                             >
                               <MoreVertical className="h-5 w-5" />
@@ -722,8 +752,9 @@ function OutboundShipments() {
                                   Edit
                                 </li>
 
-                                {shipments.tracking_number === null &&
-                                  shipments.shipping_fee === 0 && (
+                                {!shipments.tracking_number &&
+                                  (Number(shipments.shipping_fee) === 0 ||
+                                    shipments.shipping_fee === null) && (
                                     <li
                                       onClick={() => {
                                         openAddTrackingModal(shipments);

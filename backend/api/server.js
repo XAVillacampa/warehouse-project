@@ -629,10 +629,9 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      await connection.execute(
-        "DELETE FROM Inbound_Shipments WHERE id = ?",
-        [id]
-      );
+      await connection.execute("DELETE FROM Inbound_Shipments WHERE id = ?", [
+        id,
+      ]);
       await connection.execute(
         `UPDATE Inventory
         SET stock_check = stock_check - ?
@@ -772,8 +771,6 @@ app.post("/api/outbound-shipments", async (req, res) => {
       !zip_code ||
       !city ||
       !state ||
-      !tracking_number ||
-      !shipping_fee ||
       !vendor_number
     ) {
       await connection.rollback();
@@ -814,7 +811,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
     const noteValue = note || null;
     const imageLinkValue = image_link || null;
     const trackingNumberValue = tracking_number || null;
-    const shippingFeeValue = shipping_fee || 0.00;
+    const shippingFeeValue = shipping_fee || 0.0;
 
     // Format the order_date to 'YYYY-MM-DD'
     const formattedOrderDate = formatDateForMySQL(new Date(order_date));
@@ -1531,7 +1528,7 @@ app.post("/api/activate", async (req, res) => {
 // View all billings
 app.get("/api/billings", verifyToken, async (req, res) => {
   try {
-    const [billings] = await db.execute("SELECT * FROM billings");
+    const [billings] = await db.execute("SELECT * FROM billing");
     res.json(billings);
   } catch (err) {
     console.error(err);
@@ -1542,27 +1539,32 @@ app.get("/api/billings", verifyToken, async (req, res) => {
 // Add a billing
 app.post("/api/billings", verifyToken, async (req, res) => {
   const {
-    invoice_number,
-    workflow_number,
+    order_id,
     vendor_number,
-    due_date,
-    amount,
+    shipping_fee,
+    billing_date,
     notes,
+    status,
+    paid_on,
   } = req.body;
 
   try {
-    // Convert due_date to 'YYYY-MM-DD' format
-    const formattedDueDate = formatDateForMySQL(new Date(due_date));
+    // Convert billing_date to 'YYYY-MM-DD' format
+    const formattedBillingDate = formatDateForMySQL(new Date(billing_date));
+    const formattedPaidOn = paid_on
+      ? formatDateForMySQL(new Date(paid_on))
+      : null;
 
     await db.execute(
-      "INSERT INTO billings (invoice_number, workflow_number, vendor_number, due_date, amount, notes) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
-        invoice_number,
-        workflow_number,
+        order_id,
         vendor_number,
-        formattedDueDate,
-        amount,
+        shipping_fee,
+        formattedBillingDate,
         notes,
+        status,
+        formattedPaidOn,
       ]
     );
 
@@ -1573,40 +1575,35 @@ app.post("/api/billings", verifyToken, async (req, res) => {
   }
 });
 
-// Fetch all workflow numbers
-app.get("/api/workflows", async (req, res) => {
-  try {
-    const [results] = await db.execute(
-      "SELECT workflow_number, COALESCE(vendor_number, '') AS vendor_number FROM orders"
-    );
-    res.json(results);
-  } catch (err) {
-    console.error("Error fetching workflow numbers:", err);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-});
-
 // Update a billing
 app.put("/api/billings/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      invoice_number,
-      workflow_number,
+      order_id,
       vendor_number,
-      due_date,
-      amount,
+      shipping_fee,
+      billing_date,
       notes,
+      status,
+      paid_on,
     } = req.body;
+
+    const formattedBillingDate = formatDateForMySQL(new Date(billing_date));
+    const formattedPaidOn = paid_on
+      ? formatDateForMySQL(new Date(paid_on))
+      : null;
+
     const [result] = await db.execute(
-      "UPDATE billings SET invoice_number =?, workflow_number = ?, vendor_number = ?, due_date = ?, amount = ?, notes = ? WHERE id = ?",
+      "UPDATE billing SET order_id = ?, vendor_number = ?, shipping_fee = ?, billing_date = ?, notes = ?, status = ?, paid_on = ? WHERE id = ?",
       [
-        invoice_number,
-        workflow_number,
+        order_id,
         vendor_number,
-        due_date,
-        amount,
+        shipping_fee,
+        formattedBillingDate,
         notes,
+        status,
+        formattedPaidOn,
         id,
       ]
     );
@@ -1626,9 +1623,7 @@ app.put("/api/billings/:id", verifyToken, async (req, res) => {
 app.delete("/api/billings/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.execute("DELETE FROM billings WHERE id = ?", [
-      id,
-    ]);
+    const [result] = await db.execute("DELETE FROM billing WHERE id = ?", [id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Billing not found" });
@@ -1646,7 +1641,7 @@ app.put("/api/billings/:id/mark-paid", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.execute(
-      "UPDATE billings SET status = 'paid' WHERE id = ?",
+      "UPDATE billing SET status = 'Paid', paid_on = CURRENT_DATE WHERE id = ?",
       [id]
     );
 
@@ -1666,7 +1661,7 @@ app.put("/api/billings/:id/cancel", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.execute(
-      "UPDATE billings SET status = 'cancelled' WHERE id = ?",
+      "UPDATE billing SET status = 'Cancelled' WHERE id = ?",
       [id]
     );
 
@@ -1674,7 +1669,7 @@ app.put("/api/billings/:id/cancel", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Billing not found" });
     }
 
-    res.json({ message: "Billing   cancelled" });
+    res.json({ message: "Billing cancelled" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

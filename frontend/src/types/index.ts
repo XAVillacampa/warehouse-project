@@ -1,19 +1,18 @@
-// Update the Billing interface to remove items
+// Update the Billing interface to match the new schema
 export interface Billing {
-  id: string;
-  invoice_number: string;
-  workflow_number: string;
+  id: number;
+  order_id: string;
   vendor_number: string;
-  status: BillingStatus;
-  amount: number;
-  due_date: Date;
+  shipping_fee: number;
+  billing_date: Date;
   notes?: string;
+  status: BillingStatus;
+  paid_on?: Date | null;
   created_at: Date;
   updated_at: Date;
-  paidAt?: Date;
 }
 
-export type BillingStatus = 'Pending' | 'Paid' | 'Overdue';
+export type BillingStatus = "Pending" | "Paid" | "Refunded" | "Cancelled";
 
 export interface Inventory {
   id: number;
@@ -62,8 +61,8 @@ export interface OutboundShipment {
   zip_code: string;
   city: string;
   state: string;
-  tracking_number: string;
-  shipping_fee: number;
+  tracking_number?: string | null; // optional, can be null
+  shipping_fee?: number | 0.0;
   note?: string; // optional, can be null
   image_link?: string; // optional, can be null
   vendor_number: string;

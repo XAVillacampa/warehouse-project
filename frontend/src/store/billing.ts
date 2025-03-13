@@ -41,7 +41,7 @@ export const useBillingStore = create<BillingState>()(
           set((state) => ({
             billings: [
               ...state.billings,
-              { ...response, amount: Number(response.amount) },
+              { ...response, shipping_fee: Number(response.shipping_fee) },
             ],
           }));
         } catch (error) {
@@ -55,7 +55,11 @@ export const useBillingStore = create<BillingState>()(
           set((state) => ({
             billings: state.billings.map((b) =>
               b.id === billing.id
-                ? { ...billing, amount: Number(billing.amount), updated_at: new Date() }
+                ? {
+                    ...billing,
+                    shipping_fee: Number(billing.shipping_fee),
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -81,7 +85,12 @@ export const useBillingStore = create<BillingState>()(
           set((state) => ({
             billings: state.billings.map((b) =>
               b.id === billingId
-                ? { ...b, status: "paid" as BillingStatus, paidAt: new Date(), updated_at: new Date() }
+                ? {
+                    ...b,
+                    status: "Paid" as BillingStatus,
+                    paid_on: new Date(),
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -96,7 +105,11 @@ export const useBillingStore = create<BillingState>()(
           set((state) => ({
             billings: state.billings.map((b) =>
               b.id === billingId
-                ? { ...b, status: "cancelled" as BillingStatus, updated_at: new Date() }
+                ? {
+                    ...b,
+                    status: "Cancelled" as BillingStatus,
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -111,11 +124,11 @@ export const useBillingStore = create<BillingState>()(
         if (state?.billings) {
           state.billings = state.billings.map((billing) => ({
             ...billing,
-            amount: Number(billing.amount),
+            shipping_fee: Number(billing.shipping_fee),
             created_at: new Date(billing.created_at),
             updated_at: new Date(billing.updated_at),
-            dueDate: new Date(billing.dueDate),
-            paidAt: billing.paidAt ? new Date(billing.paidAt) : undefined,
+            billing_date: new Date(billing.billing_date),
+            paid_on: billing.paid_on ? new Date(billing.paid_on) : undefined,
           }));
         }
       },
