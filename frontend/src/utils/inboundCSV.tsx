@@ -5,7 +5,7 @@ export const parseInboundShipmentCSV = (
   products: Inventory[]
 ): InboundShipment[] => {
   const lines = csvText.split("\n");
-  const headers = lines[0].split(",").map((h) => h.trim());
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
 
   return lines
     .slice(1)
@@ -15,31 +15,29 @@ export const parseInboundShipmentCSV = (
       const shipment: Partial<InboundShipment> = {};
 
       headers.forEach((header, index) => {
-        const normalizedHeader = header.toLowerCase().trim();
-
-        switch (normalizedHeader) {
-          case "shipping_date":
-            shipment.shipping_date = formatDateForMySQL(new Date(values[index]));
+        switch (header) {
+          case "shipping date(dd-mm-yyyy)":
+            shipment.shipping_date = parseDate(values[index]);
             break;
-          case "box_label":
+          case "box":
             shipment.box_label = values[index];
             break;
-          case "sku (select from dropdown)":
+          case "sku":
             shipment.sku = values[index];
             break;
-          case "warehouse_code":
+          case "warehouse code":
             shipment.warehouse_code = values[index];
             break;
-          case "item_quantity":
+          case "quantity":
             shipment.item_quantity = Number(values[index]);
             break;
-          case "arriving_date":
-            shipment.arriving_date = formatDateForMySQL(new Date(values[index]));
+          case "arriving date":
+            shipment.arriving_date = parseDate(values[index]);
             break;
-          case "tracking_number":
+          case "tracking number":
             shipment.tracking_number = values[index];
             break;
-          case "vendor_number":
+          case "vendor number":
             shipment.vendor_number = values[index];
             break;
           default:
@@ -51,7 +49,11 @@ export const parseInboundShipmentCSV = (
     });
 };
 
-const formatDateForMySQL = (date: Date): string => {
+const parseDate = (dateString: string): string => {
+  const [day, month, year] = dateString.includes("/")
+    ? dateString.split("/").map(Number)
+    : dateString.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
   return date.toISOString().split("T")[0]; // 'YYYY-MM-DD'
 };
 
@@ -65,7 +67,7 @@ export const validateInboundShipments = (
     const lineNumber = index + 2; // +2 because we skip the header and use 0-based indexing
 
     // Check if a valid product was found via SKU.
-    if (!shipment.sku)
+    if (!shipment.sku || !products.some((product) => product.sku === shipment.sku))
       errors.push(`Line ${lineNumber}: SKU not found in inventory`);
 
     // Validate quantity

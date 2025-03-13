@@ -38,10 +38,6 @@ function BulkInboundShipmentModal({
         return;
       }
 
-      const formatDateForMySQL = (date: Date) => {
-        return date.toISOString().replace("T", " ").slice(0, 19); // '2025-01-30 07:53:42'
-      };
-
       // Call the onImport handler (which should call your bulk API endpoint)
       await onImport(
         shipments.map((shipment) => ({
@@ -84,14 +80,14 @@ function BulkInboundShipmentModal({
   const downloadTemplate = () => {
     // Adjusted headers: remove the Order ID column because it is auto-generated
     const headers = [
-      "shipping_date",
-      "box_label",
-      "sku (select from dropdown)",
-      "item_quantity",
-      "arriving_date",
-      "tracking_number",
-      "vendor_number",
-      "warehouse_code",
+      "Shipping date(dd-mm-yyyy)",
+      "Box",
+      "SKU",
+      "Warehouse Code",
+      "Quantity",
+      "Arriving date",
+      "Tracking Number",
+      "Vendor Number",
     ].join(",");
 
     // List of SKUs from the product list (displayed as a placeholder)
@@ -105,11 +101,11 @@ function BulkInboundShipmentModal({
           "2025-03-01", // Example shipping date
           "BOX 1", // Example box label
           skuOptions, // Placeholder dropdown for SKU
+          "WH1", // Example warehouse code
           "100", // Example quantity
           "2025-03-03", // Example arriving date
           "123456", // Example tracking number
           product.vendor_number, // Example vendor
-          "WH1", // Example warehouse code
         ].join(",")
       )
       .join("\n");
