@@ -13,6 +13,8 @@ export interface Billing {
   paidAt?: Date;
 }
 
+export type BillingStatus = 'Pending' | 'Paid' | 'Overdue';
+
 export interface Inventory {
   id: number;
   sku: string;

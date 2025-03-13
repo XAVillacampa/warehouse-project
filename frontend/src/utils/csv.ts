@@ -1,6 +1,6 @@
-import { Product } from "../types";
+import { Inventory } from "../types";
 
-export const parseCSV = (csvText: string): Product[] => {
+export const parseCSV = (csvText: string): Inventory[] => {
   const lines = csvText.split("\n");
   const headers = lines[0].split(",").map((h) => h.trim());
 
@@ -9,7 +9,7 @@ export const parseCSV = (csvText: string): Product[] => {
     .filter((line) => line.trim())
     .map((line) => {
       const values = line.split(",").map((v) => v.trim());
-      const product: Partial<Product> = {};
+      const product: Partial<Inventory> = {};
 
       headers.forEach((header, index) => {
         const value = values[index];
@@ -53,13 +53,13 @@ export const parseCSV = (csvText: string): Product[] => {
         updatedAt: new Date(),
         cbm: (product.cbm || 0) * (product.stock_check || 0),
         ...product,
-      } as Product;
+      } as Inventory;
     });
 };
 
 export const validateProducts = (
-  products: Product[],
-  existingProducts: Product[],
+  products: Inventory[],
+  existingProducts: Inventory[],
   isUpdate: boolean
 ): string[] => {
   const errors: string[] = [];
@@ -97,16 +97,11 @@ export const validateProducts = (
       errors.push(`Line ${lineNumber}: SKU is required`);
     if (!product.warehouse_code)
       errors.push(`Line ${lineNumber}: Warehouse code is required`);
-    if (!product.weight)
-      errors.push(`Line ${lineNumber}: Weight is required`);
-    if (!product.height)
-      errors.push(`Line ${lineNumber}: Height is required`);
-    if (!product.length)
-      errors.push(`Line ${lineNumber}: Length is required`);
-    if (!product.width)
-      errors.push(`Line ${lineNumber}: Width is required`);
-    if (!product.cbm)
-      errors.push(`Line ${lineNumber}: Unit CBM is required`);
+    if (!product.weight) errors.push(`Line ${lineNumber}: Weight is required`);
+    if (!product.height) errors.push(`Line ${lineNumber}: Height is required`);
+    if (!product.length) errors.push(`Line ${lineNumber}: Length is required`);
+    if (!product.width) errors.push(`Line ${lineNumber}: Width is required`);
+    if (!product.cbm) errors.push(`Line ${lineNumber}: Unit CBM is required`);
     if (!product.vendor_number)
       errors.push(`Line ${lineNumber}: Vendor number is required`);
   });

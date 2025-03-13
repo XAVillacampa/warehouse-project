@@ -813,6 +813,8 @@ app.post("/api/outbound-shipments", async (req, res) => {
     const address2Value = address2 || null;
     const noteValue = note || null;
     const imageLinkValue = image_link || null;
+    const trackingNumberValue = tracking_number || null;
+    const shippingFeeValue = shipping_fee || 0.00;
 
     // Format the order_date to 'YYYY-MM-DD'
     const formattedOrderDate = formatDateForMySQL(new Date(order_date));
@@ -832,8 +834,8 @@ app.post("/api/outbound-shipments", async (req, res) => {
       zip_code,
       city,
       state,
-      tracking_number,
-      shipping_fee,
+      tracking_number: trackingNumberValue,
+      shipping_fee: shippingFeeValue,
       note: noteValue,
       image_link: imageLinkValue,
       vendor_number,
@@ -858,8 +860,8 @@ app.post("/api/outbound-shipments", async (req, res) => {
         zip_code,
         city,
         state,
-        tracking_number,
-        shipping_fee,
+        trackingNumberValue,
+        shippingFeeValue,
         noteValue,
         imageLinkValue,
         vendor_number,

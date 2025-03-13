@@ -1,12 +1,12 @@
 import React, { useState, useRef } from "react";
 import { Upload, AlertCircle, Download } from "lucide-react";
 import { parseCSV, validateProducts } from "../utils/csv";
-import { Product } from "../types";
+import { Inventory } from "../types";
 
 interface BulkImportModalProps {
   onClose: () => void;
-  onImport: (products: Product[], isUpdate: boolean) => void;
-  existingProducts: Product[];
+  onImport: (products: Inventory[], isUpdate: boolean) => void;
+  existingProducts: Inventory[];
   allowedVendorNumbers: string[];
 }
 
@@ -57,7 +57,7 @@ function BulkImportModal({
           );
           if (existingProduct) {
             product.sku = existingProduct.sku;
-            product.created_at = existingProduct.createdAt;
+            product.created_at = existingProduct.created_at;
           }
         });
       }

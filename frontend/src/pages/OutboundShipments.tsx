@@ -6,6 +6,7 @@ import {
   Upload,
   Edit,
   MoreVertical,
+  PlusCircle,
 } from "lucide-react";
 import Modal from "../components/Modal";
 import SearchableSelect from "../components/SearchableSelect";
@@ -29,11 +30,16 @@ interface OutboundShipmentFormData {
   zip_code: string;
   city: string;
   state: string;
-  tracking_number: string;
-  shipping_fee: number;
+  tracking_number?: string;
+  shipping_fee?: number;
   note?: string;
   image_link?: string;
   vendor_number: string;
+}
+
+interface AddTrackingFormData {
+  tracking_number: string;
+  shipping_fee: number;
 }
 
 function OutboundShipments() {
@@ -44,7 +50,9 @@ function OutboundShipments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
+  const [isAddTrackingModalOpen, setIsAddTrackingModalOpen] = useState(false);
+  const [currentShipment, setCurrentShipment] =
+    useState<OutboundShipment | null>(null);
   const {
     register,
     handleSubmit,
@@ -53,6 +61,13 @@ function OutboundShipments() {
     control,
     formState: { errors },
   } = useForm<OutboundShipmentFormData>();
+  const {
+    register: registerTracking,
+    handleSubmit: handleSubmitTracking,
+    reset: resetTracking,
+    setValue: setValueTracking,
+    formState: { errors: errorsTracking },
+  } = useForm<AddTrackingFormData>();
   const {
     inventory,
     outbound,
@@ -163,6 +178,8 @@ function OutboundShipments() {
       created_at: editingShipment?.created_at || formatDateForMySQL(new Date()), // Preserve original creation date if editing
       updated_at: formatDateForMySQL(new Date()), // Set the updated date to now
       note: data.note || "",
+      tracking_number: data.tracking_number || "", // Ensure tracking_number is always a string
+      shipping_fee: data.shipping_fee ?? 0, // Ensure shipping_fee is always a number
     };
 
     // Log the shipment data to debug
@@ -208,6 +225,29 @@ function OutboundShipments() {
     closeModal(); // Close the modal after processing
   };
 
+  const onAddTrackingSubmit = async (data: AddTrackingFormData) => {
+    if (currentShipment) {
+      const updatedShipment = {
+        ...currentShipment,
+        tracking_number: data.tracking_number,
+        shipping_fee: data.shipping_fee,
+        updated_at: formatDateForMySQL(new Date()),
+      };
+
+      try {
+        await updateOutbound(updatedShipment);
+        setAlert(
+          "Tracking number and shipping fee added successfully",
+          "success"
+        );
+        closeAddTrackingModal();
+      } catch (error) {
+        console.error("Error adding tracking number and shipping fee:", error);
+        setAlert("Error adding tracking number and shipping fee", "error");
+      }
+    }
+  };
+
   const handleBulkImport = async (newShipments: OutboundShipment[]) => {
     try {
       await bulkUploadOutbound(newShipments);
@@ -237,7 +277,7 @@ function OutboundShipments() {
     setValue("city", shipment.city);
     setValue("state", shipment.state);
     setValue("tracking_number", shipment.tracking_number);
-    setValue("shipping_fee", shipment.shipping_fee);
+    resetTracking();
     setValue("note", shipment.note || "");
     setValue("image_link", shipment.image_link || "");
     setValue("vendor_number", shipment.vendor_number);
@@ -261,6 +301,19 @@ function OutboundShipments() {
       console.error("Error deleting outbound shipment:", error);
       setAlert("Error deleting outbound shipment", "error");
     }
+  };
+
+  const openAddTrackingModal = (shipment: OutboundShipment) => {
+    setCurrentShipment(shipment);
+    setValue("tracking_number", shipment.tracking_number || "");
+    setValue("shipping_fee", shipment.shipping_fee || 0);
+    setIsAddTrackingModalOpen(true);
+  };
+
+  const closeAddTrackingModal = () => {
+    setIsAddTrackingModalOpen(false);
+    setCurrentShipment(null);
+    reset();
   };
 
   return (
@@ -506,6 +559,60 @@ function OutboundShipments() {
         </form>
       </Modal>
 
+      <Modal
+        isOpen={isAddTrackingModalOpen}
+        onClose={closeAddTrackingModal}
+        title="Add Tracking Number and Shipping Fee"
+      >
+        <form
+          onSubmit={handleSubmitTracking(onAddTrackingSubmit)}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tracking Number
+            </label>
+            <input
+              type="text"
+              {...register("tracking_number", { required: true })}
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+            />
+            {errors.tracking_number && (
+              <p className="text-red-500">{errors.tracking_number.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Shipping Fee
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register("shipping_fee", { required: true, min: 0 })}
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+            />
+            {errors.shipping_fee && (
+              <p className="text-red-500">{errors.shipping_fee.message}</p>
+            )}
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={closeAddTrackingModal}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-md"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <div className="overflow-x-auto">
@@ -614,6 +721,20 @@ function OutboundShipments() {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </li>
+
+                                {shipments.tracking_number === null &&
+                                  shipments.shipping_fee === 0 && (
+                                    <li
+                                      onClick={() => {
+                                        openAddTrackingModal(shipments);
+                                        setOpenActionMenu(null);
+                                      }}
+                                      className="flex items-center px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                    >
+                                      <PlusCircle className="h-4 w-4 mr-2" />
+                                      Add Tracking Number
+                                    </li>
+                                  )}
 
                                 <li
                                   onClick={() => {
