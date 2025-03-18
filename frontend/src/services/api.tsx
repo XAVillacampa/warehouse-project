@@ -1,5 +1,5 @@
 import axios from "axios";
-import { InboundShipment, OutboundShipment } from "../types";
+import { InboundShipment, NewBilling, OutboundShipment } from "../types";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -359,7 +359,7 @@ export const fetchBillingsAPI = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("No authentication token found. Redirecting to login...");
-      return;
+      return [];
     }
 
     const response = await axios.get(`${API_BASE_URL}/billings`, {
@@ -367,7 +367,7 @@ export const fetchBillingsAPI = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log("Fetched billings response:", response.data); // Log for debugging
+    console.log("Fetched billings response:", response.data);
 
     if (!response || !response.data) {
       throw new Error("Invalid response from fetchBillingsAPI");
@@ -380,7 +380,7 @@ export const fetchBillingsAPI = async () => {
 };
 
 // Add a new billing
-export const addBillingAPI = async (billing) => {
+export const addBillingAPI = async (billing: NewBilling) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -393,13 +393,13 @@ export const addBillingAPI = async (billing) => {
         "Content-Type": "application/json",
       },
     });
-    console.log("Add billing response:", response.data); // Log for debugging
+    console.log("Add billing response:", response.data);
 
     if (!response || !response.data) {
       throw new Error("Invalid response from addBillingAPI");
     }
 
-    return response.data;
+    return response.data; // Ensure the backend returns the full Billing object
   } catch (error) {
     handleApiError(error, "Error adding billing");
   }
@@ -424,7 +424,7 @@ export const updateBillingAPI = async (billingId, billing) => {
         },
       }
     );
-    console.log("Update billing response:", response.data); // Log for debugging
+    console.log("Update billing response:", response.data);
 
     if (!response || !response.data) {
       throw new Error("Invalid response from updateBillingAPI");
@@ -451,7 +451,7 @@ export const deleteBillingAPI = async (billingId) => {
         },
       }
     );
-    console.log("Delete billing response:", response.data); // Log for debugging
+    console.log("Delete billing response:", response.data);
 
     if (!response || !response.data) {
       throw new Error("Invalid response from deleteBillingAPI");
@@ -479,7 +479,7 @@ export const markBillingAsPaidAPI = async (billingId) => {
         },
       }
     );
-    console.log("Mark billing as paid response:", response.data); // Log for debugging
+    console.log("Mark billing as paid response:", response.data);
 
     if (!response || !response.data) {
       throw new Error("Invalid response from markBillingAsPaidAPI");
@@ -508,7 +508,7 @@ export const cancelBillingAPI = async (billingId) => {
         },
       }
     );
-    console.log("Cancel billing response:", response.data); // Log for debugging
+    console.log("Cancel billing response:", response.data);
 
     if (!response || !response.data) {
       throw new Error("Invalid response from cancelBillingAPI");

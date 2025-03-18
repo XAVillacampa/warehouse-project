@@ -8,25 +8,26 @@ import {
   Trash2,
   CheckCircle,
   MoreVertical,
+  XCircle,
 } from "lucide-react";
 import Modal from "../components/Modal";
 import SearchableSelect from "../components/SearchableSelect";
 import { useForm, Controller } from "react-hook-form";
-import { Billing, BillingStatus } from "../types";
+import { Billing, BillingStatus, NewBilling } from "../types";
 import { useBillingStore } from "../store/billing";
 import { useInventoryStore, useAlertStore } from "../store";
 import { useAuthStore } from "../store/auth";
 import BulkBillingModal from "../components/BulkBillingModal";
-// import { fetchWorkflowsAPI } from "../services/api";
 import { set } from "date-fns";
 
 interface BillingFormData {
-  invoice_number: string;
-  workflow_number: string;
+  order_id: string;
   vendor_number: string;
-  amount: number;
-  due_date: string;
+  shipping_fee: number;
+  billing_date: Date;
   notes?: string;
+  status: BillingStatus;
+  paid_on?: Date | null;
 }
 
 function Billings() {
@@ -50,7 +51,7 @@ function Billings() {
     cancelBilling,
     fetchBillings,
   } = useBillingStore();
-  const { outbound } = useInventoryStore();
+  const { outbound, fetchOutbound } = useInventoryStore();
   const { user, getAllowedVendorNumbers } = useAuthStore();
   const { setAlert } = useAlertStore();
 
@@ -58,30 +59,37 @@ function Billings() {
   const canEdit = user?.role !== "vendor";
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const [workflowOptions, setWorkflowOptions] = useState([]);
+  interface OutboundOption {
+    value: string;
+    label: string;
+    vendor_number: string;
+    warehouse_code: string;
+  }
+
+  const [outboundOptions, setOutboundOptions] = useState<OutboundOption[]>([]);
 
   const statusClasses: Record<string, string> = {
-    pending:
+    Pending:
       "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    Paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    Cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   };
 
-  // useEffect(() => {
-  //   const fetchWorkflows = async () => {
-  //     const workflows = await fetchWorkflowsAPI();
-  //     // console.log("Fetched workflows:", workflows); // Debugging log
+  useEffect(() => {
+    const fetchOutboundData = () => {
+      fetchOutbound();
 
-  //     setWorkflowOptions(
-  //       workflows.map((workflow) => ({
-  //         value: workflow.workflow_number,
-  //         label: workflow.workflow_number,
-  //         vendor_number: workflow.vendor_number || "", // Ensure it's never null
-  //       }))
-  //     );
-  //   };
-  //   fetchWorkflows();
-  // }, []);
+      setOutboundOptions(
+        outbound.map((order) => ({
+          value: order.order_id,
+          label: order.order_id,
+          vendor_number: order.vendor_number || "", // Ensure it's never null
+          warehouse_code: order.warehouse_code || "", // Add warehouse_code here
+        }))
+      );
+    };
+    fetchOutboundData();
+  }, [fetchOutbound, outbound]);
 
   // Fetch billings data using useEffect
   useEffect(() => {
@@ -121,13 +129,6 @@ function Billings() {
     return date.toISOString().split("T")[0]; // Convert Date objects
   };
 
-  // // Get unique vendor numbers from products
-  // const workflowOptions = transactions.map((transaction, index) => ({
-  //   value: transaction.workflow_number || `vendor-${index}`, // Ensure value is defined
-  //   label: transaction.workflow_number || "Unknown Vendor", // Default label if undefined
-  //   vendor_number: transaction.vendor_number || "",
-  // }));
-
   const filteredBillings = useMemo(() => {
     return billings
       .filter((billing) => {
@@ -145,7 +146,7 @@ function Billings() {
 
         // Filter by search term
         const searchString =
-          `${billing.invoice_number} ${billing.vendor_number}`.toLowerCase();
+          `${billing.order_id} ${billing.vendor_number}`.toLowerCase();
         return searchString.includes(searchTerm.toLowerCase());
       })
       .sort(
@@ -159,25 +160,31 @@ function Billings() {
       const updatedBilling: Billing = {
         ...editingBilling,
         ...data,
-        amount: Number(data.amount),
-        due_date: formatDateForMySQL(new Date(data.due_date)),
+        shipping_fee: Number(data.shipping_fee),
+        billing_date: formatDateForMySQL(new Date(data.billing_date)),
         updated_at: formatDateForMySQL(new Date()),
       };
       console.log("Updated Billing: ", updatedBilling);
       await updateBilling(updatedBilling);
       setAlert("Billing updated successfully", "success");
     } else {
-      const newBilling: Billing = {
-        id: crypto.randomUUID(),
+      const newBilling: NewBilling = {
         ...data,
-        amount: Number(data.amount),
-        status: "pending",
-        due_date: formatDateForMySQL(new Date(data.due_date)),
-        created_at: formatDateForMySQL(new Date()),
-        updated_at: formatDateForMySQL(new Date()),
+        shipping_fee: Number(data.shipping_fee),
+        status: "Pending",
+        billing_date: formatDateForMySQL(new Date(data.billing_date)),
+        notes: data.notes || "",
+        vendor_number: data.vendor_number,
+        order_id: data.order_id,
+        paid_on: null,
       };
       console.log("New Billing: ", newBilling);
-      await addBilling(newBilling);
+      await addBilling({
+        ...newBilling,
+        id: Date.now(), // Generate a temporary ID
+        created_at: formatDateForMySQL(new Date()),
+        updated_at: formatDateForMySQL(new Date()),
+      }); // Pass the Billing object
       setAlert("Billing created successfully", "success");
     }
     closeModal();
@@ -189,7 +196,7 @@ function Billings() {
     setIsBulkImportModalOpen(false);
   };
 
-  const handleDeleteBilling = async (billingId: string) => {
+  const handleDeleteBilling = async (billingId: number) => {
     if (
       window.confirm(
         "Are you sure you want to delete this billing? This action cannot be undone."
@@ -205,7 +212,7 @@ function Billings() {
     }
   };
 
-  const handleMarkAsPaid = async (billingId: string) => {
+  const handleMarkAsPaid = async (billingId: number) => {
     try {
       await markAsPaid(billingId); // Trigger the backend API
       setAlert("Billing marked as paid", "success");
@@ -215,7 +222,7 @@ function Billings() {
     }
   };
 
-  const handleCancelBilling = async (billingId: string) => {
+  const handleCancelBilling = async (billingId: number) => {
     try {
       await cancelBilling(billingId); // Trigger the backend API
       setAlert("Billing cancelled successfully", "success");
@@ -230,11 +237,10 @@ function Billings() {
     console.log(billing);
     setIsModalOpen(true);
     reset({
-      invoice_number: billing.invoice_number,
-      workflow_number: billing.workflow_number,
+      order_id: billing.order_id,
       vendor_number: billing.vendor_number,
-      amount: billing.amount,
-      due_date: formatDateForInput(billing.due_date),
+      shipping_fee: billing.shipping_fee,
+      billing_date: billing.billing_date,
       notes: billing.notes,
     });
   };
@@ -307,32 +313,32 @@ function Billings() {
           {!editingBilling && <></>}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Invoice Number
+              Billing Date
             </label>
             <input
-              type="text"
-              {...register("invoice_number", { required: true })}
+              type="date"
+              {...register("billing_date", { required: true })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Workflow Number
+              Order ID
             </label>
             <Controller
-              name="workflow_number"
+              name="order_id"
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
                 <SearchableSelect
-                  options={workflowOptions}
+                  options={outboundOptions}
                   value={field.value}
                   onChange={(value, vendor_number) => {
                     field.onChange(value);
                     setValue("vendor_number", vendor_number || "N/A"); // Default to "N/A" if empty
                   }}
-                  placeholder="Select a workflow number..."
+                  placeholder="Select an order..."
                   className="mt-1"
                 />
               )}
@@ -360,25 +366,16 @@ function Billings() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Amount
+              Shipping Fee
             </label>
             <input
               type="number"
               step="0.01"
-              {...register("amount", { required: true, min: 0 })}
+              {...register("shipping_fee", { required: true, min: 0 })}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Due Date
-            </label>
-            <input
-              type="date"
-              {...register("due_date", { required: true })}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            />
-          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Notes
@@ -421,23 +418,23 @@ function Billings() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Invoice Number
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Order ID
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Workflow Number
-                  </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Vendor Number
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Billing Date
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Shipping Fee
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Due Date
-                  </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Amount
+                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Paid On
                   </th>
                   <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
@@ -456,17 +453,27 @@ function Billings() {
                   </tr>
                 ) : (
                   filteredBillings.map((billing) => (
-                    <tr key={billing.invoice_number}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {billing.invoice_number}
+                    <tr key={billing.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900 dark:text-white">
+                        {billing.order_id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {billing.workflow_number}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
                         {billing.vendor_number}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(billing.billing_date).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                        ${billing.shipping_fee}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap content-center text-center text-sm font-medium">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             statusClasses[billing.status] ||
@@ -476,20 +483,26 @@ function Billings() {
                           {billing.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(billing.due_date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        ${billing.amount}
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                        {!billing.paid_on
+                          ? "N/A"
+                          : new Date(billing.paid_on).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="relative inline-block text-left">
                           <button
                             onClick={() =>
                               setOpenActionMenu(
-                                openActionMenu === billing.id
+                                openActionMenu === String(billing.id)
                                   ? null
-                                  : billing.id
+                                  : String(billing.id)
                               )
                             }
                             className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
@@ -497,7 +510,7 @@ function Billings() {
                             <MoreVertical className="h-5 w-5" />
                           </button>
                         </div>
-                        {openActionMenu === billing.id && (
+                        {openActionMenu === String(billing.id) && (
                           <div
                             ref={menuRef}
                             className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
@@ -517,8 +530,8 @@ function Billings() {
                                 Download PDF
                               </button>
                               {canEdit &&
-                                billing.status !== "paid" &&
-                                billing.status !== "cancelled" && (
+                                billing.status !== "Paid" &&
+                                billing.status !== "Cancelled" && (
                                   <>
                                     <button
                                       onClick={() => {
@@ -557,7 +570,7 @@ function Billings() {
                                       }}
                                       className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
                                     >
-                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      <XCircle className="h-4 w-4 mr-2" />
                                       Cancel
                                     </button>
                                   </>

@@ -1537,7 +1537,7 @@ app.get("/api/billings", verifyToken, async (req, res) => {
 });
 
 // Add a billing
-app.post("/api/billings", verifyToken, async (req, res) => {
+app.post("/api/billings", async (req, res) => {
   const {
     order_id,
     vendor_number,
@@ -1549,29 +1549,27 @@ app.post("/api/billings", verifyToken, async (req, res) => {
   } = req.body;
 
   try {
-    // Convert billing_date to 'YYYY-MM-DD' format
-    const formattedBillingDate = formatDateForMySQL(new Date(billing_date));
-    const formattedPaidOn = paid_on
-      ? formatDateForMySQL(new Date(paid_on))
-      : null;
-
-    await db.execute(
+    const [result] = await db.execute(
       "INSERT INTO billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         order_id,
         vendor_number,
         shipping_fee,
-        formattedBillingDate,
+        billing_date,
         notes,
         status,
-        formattedPaidOn,
+        paid_on,
       ]
     );
 
-    res.status(201).json({ message: "Billing added successfully" });
+    const [newBilling] = await db.execute(
+      "SELECT * FROM billing WHERE id = ?",
+      [result.insertId]
+    );
+    res.status(201).json(newBilling[0]); // Return the full Billing object
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Error creating billing" });
   }
 });
 

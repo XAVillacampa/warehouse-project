@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Billing, BillingStatus } from "../types";
+import { Billing, BillingStatus, NewBilling } from "../types";
 import {
   addBillingAPI,
   updateBillingAPI,
@@ -14,9 +14,9 @@ interface BillingState {
   billings: Billing[];
   addBilling: (billing: Billing) => Promise<void>;
   updateBilling: (billing: Billing) => Promise<void>;
-  deleteBilling: (billingId: string) => Promise<void>;
-  markAsPaid: (billingId: string) => Promise<void>;
-  cancelBilling: (billingId: string) => Promise<void>;
+  deleteBilling: (billingId: number) => Promise<void>;
+  markAsPaid: (billingId: number) => Promise<void>;
+  cancelBilling: (billingId: number) => Promise<void>;
   fetchBillings: () => Promise<void>;
 }
 
@@ -35,13 +35,19 @@ export const useBillingStore = create<BillingState>()(
         }
       },
 
-      addBilling: async (billing) => {
+      addBilling: async (billing: NewBilling) => {
         try {
-          const response = await addBillingAPI(billing); // Send request to backend
+          // Send the NewBilling object to the backend
+          const response = await addBillingAPI(billing);
+
+          // Add the response (which includes id, created_at, updated_at) to the state
           set((state) => ({
             billings: [
               ...state.billings,
-              { ...response, shipping_fee: Number(response.shipping_fee) },
+              {
+                ...response, // Use the response from the backend
+                shipping_fee: Number(response.shipping_fee), // Ensure shipping_fee is a number
+              },
             ],
           }));
         } catch (error) {

@@ -14,6 +14,8 @@ export interface Billing {
 
 export type BillingStatus = "Pending" | "Paid" | "Refunded" | "Cancelled";
 
+export type NewBilling = Omit<Billing, "id" | "created_at" | "updated_at">;
+
 export interface Inventory {
   id: number;
   sku: string;
