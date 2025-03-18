@@ -36,8 +36,8 @@ function Billings() {
   const [editingBilling, setEditingBilling] = useState<Billing | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<BillingStatus | "all">(
-    "all"
+  const [selectedStatus, setSelectedStatus] = useState<BillingStatus | "All">(
+    "All"
   );
 
   const { register, handleSubmit, reset, control, setValue } =
@@ -140,7 +140,7 @@ function Billings() {
         }
 
         // Filter by status
-        if (selectedStatus !== "all" && billing.status !== selectedStatus) {
+        if (selectedStatus !== "All" && billing.status !== selectedStatus) {
           return false;
         }
 
@@ -291,16 +291,14 @@ function Billings() {
         <select
           value={selectedStatus}
           onChange={(e) =>
-            setSelectedStatus(e.target.value as BillingStatus | "all")
+            setSelectedStatus(e.target.value as BillingStatus | "All")
           }
           className="block w-40 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:text-white"
         >
-          <option value="all">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="overdue">Overdue</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="All">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Paid">Paid</option>
+          <option value="Cancelled">Cancelled</option>
         </select>
       </div>
 
