@@ -718,15 +718,16 @@ const generateOrderId = async (connection) => {
   const prefix = "OS";
   const date = new Date();
   const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   const year = String(date.getFullYear()).slice(-2); // Get the last 2 digits of the year
 
   // Get the next counter value
   const counter = await getNextOrderIdCounter(connection);
 
-  const orderId = `${prefix}${month}${year}-${String(counter).padStart(
+  const orderId = `${prefix}${month}${day}${year}-${String(counter).padStart(
     4,
     "0"
-  )}`; // Format: OSMMYY-0001
+  )}`; // Format: OSMMDDYY-0001
 
   return orderId;
 };
@@ -817,7 +818,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
     const formattedOrderDate = formatDateForMySQL(new Date(order_date));
 
     // Log the parameters to debug
-    console.log("Parameters:", {
+    console.log("Add Outbound Shipment Parameters:", {
       order_date: formattedOrderDate,
       order_id,
       sku,
@@ -1109,7 +1110,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
     const formattedOrderDate = formatDateForMySQL(new Date(order_date));
 
     // Log the parameters to debug
-    console.log("Parameters:", {
+    console.log("Update Outbound Shipment Parameters:", {
       order_date: formattedOrderDate,
       sku,
       item_quantity,
@@ -1575,32 +1576,62 @@ app.post("/api/billings", async (req, res) => {
 
 // Update a billing
 app.put("/api/billings/:id", verifyToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      order_id,
-      vendor_number,
-      shipping_fee,
-      billing_date,
-      notes,
-      status,
-      paid_on,
-    } = req.body;
+  const { id } = req.params;
+  const {
+    order_id,
+    vendor_number,
+    shipping_fee,
+    billing_date,
+    notes,
+    status,
+    paid_on,
+  } = req.body;
 
-    const formattedBillingDate = formatDateForMySQL(new Date(billing_date));
+  try {
+    // Validate required fields
+    if (!order_id) {
+      return res
+        .status(400)
+        .json({ message: "Missing required field: order_id" });
+    }
+
+    // Replace undefined values with null
+    const formattedOrderId = order_id || null;
+    const formattedVendorNumber = vendor_number || null;
+    const formattedShippingFee = shipping_fee || 0; // Default to 0 if undefined
+    const formattedBillingDate = billing_date
+      ? formatDateForMySQL(new Date(billing_date))
+      : null;
+    const formattedNotes = notes || null;
+    const formattedStatus = status || null;
     const formattedPaidOn = paid_on
       ? formatDateForMySQL(new Date(paid_on))
       : null;
 
+    console.log("Update Billing Parameters:", {
+      order_id: formattedOrderId,
+      vendor_number: formattedVendorNumber,
+      shipping_fee: formattedShippingFee,
+      billing_date: formattedBillingDate,
+      notes: formattedNotes,
+      status: formattedStatus,
+      paid_on: formattedPaidOn,
+      id,
+    });
+
+    // Execute the SQL query
     const [result] = await db.execute(
-      "UPDATE billing SET order_id = ?, vendor_number = ?, shipping_fee = ?, billing_date = ?, notes = ?, status = ?, paid_on = ? WHERE id = ?",
+      `UPDATE billing 
+       SET order_id = ?, vendor_number = ?, shipping_fee = ?, billing_date = ?, 
+           notes = ?, status = ?, paid_on = ? 
+       WHERE id = ?`,
       [
-        order_id,
-        vendor_number,
-        shipping_fee,
+        formattedOrderId,
+        formattedVendorNumber,
+        formattedShippingFee,
         formattedBillingDate,
-        notes,
-        status,
+        formattedNotes,
+        formattedStatus,
         formattedPaidOn,
         id,
       ]
@@ -1610,9 +1641,17 @@ app.put("/api/billings/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Billing not found" });
     }
 
+    // Synchronize with OutboundShipments
+    await db.execute(
+      `UPDATE Outbound_Shipments 
+       SET shipping_fee = ? 
+       WHERE order_id = ?`,
+      [shipping_fee, order_id]
+    );
+
     res.json({ message: "Billing updated successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Error updating billing:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

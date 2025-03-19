@@ -1,3 +1,6 @@
+// Define the AlertType as a union of string literals
+export type AlertType = "success" | "error" | "warning" | "info";
+
 // Update the Billing interface to match the new schema
 export interface Billing {
   id: number;

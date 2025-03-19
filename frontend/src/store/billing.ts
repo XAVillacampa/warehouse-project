@@ -9,6 +9,7 @@ import {
   cancelBillingAPI,
   fetchBillingsAPI,
 } from "../services/api"; // Import API functions
+import { useInventoryStore } from ".";
 
 interface BillingState {
   billings: Billing[];
@@ -18,6 +19,7 @@ interface BillingState {
   markAsPaid: (billingId: number) => Promise<void>;
   cancelBilling: (billingId: number) => Promise<void>;
   fetchBillings: () => Promise<void>;
+  updateShippingFee: (orderId: string, newShippingFee: number) => Promise<void>; // Add this line
 }
 
 export const useBillingStore = create<BillingState>()(
@@ -55,9 +57,12 @@ export const useBillingStore = create<BillingState>()(
         }
       },
 
-      updateBilling: async (billing) => {
+      updateBilling: async (billing: Billing) => {
         try {
-          await updateBillingAPI(billing.id, billing); // Update backend
+          // Update the billing in the backend
+          await updateBillingAPI(billing.id, billing);
+
+          // Update the billing in the state
           set((state) => ({
             billings: state.billings.map((b) =>
               b.id === billing.id
@@ -69,6 +74,13 @@ export const useBillingStore = create<BillingState>()(
                 : b
             ),
           }));
+
+          // Synchronize the shipping fee with OutboundShipments
+          const { updateOutboundShippingFee } = useInventoryStore.getState();
+          await updateOutboundShippingFee(
+            billing.order_id,
+            billing.shipping_fee
+          );
         } catch (error) {
           console.error("Error updating billing:", error);
         }
@@ -121,6 +133,42 @@ export const useBillingStore = create<BillingState>()(
           }));
         } catch (error) {
           console.error("Error cancelling billing:", error);
+        }
+      },
+
+      updateShippingFee: async (orderId: string, newShippingFee: number) => {
+        try {
+          // Fetch the billing entry by order_id to get the billing id
+          const billing = get().billings.find((b) => b.order_id === orderId);
+
+          if (!billing) {
+            console.error(`No billing found for order_id: ${orderId}`);
+            return;
+          }
+
+          const billingId = billing.id; // Get the billing id
+
+          // Update the shipping fee in the backend using the billing id
+          const updatedBilling = await updateBillingAPI(billingId, {
+            ...billing,
+            order_id: billing.order_id, // Ensure order_id is passed
+            shipping_fee: newShippingFee,
+          });
+
+          // Update the state
+          set((state) => ({
+            billings: state.billings.map((b) =>
+              b.id === billingId
+                ? {
+                    ...b,
+                    shipping_fee: newShippingFee,
+                    updated_at: new Date(),
+                  }
+                : b
+            ),
+          }));
+        } catch (error) {
+          console.error("Error updating shipping fee in billing:", error);
         }
       },
     }),

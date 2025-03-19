@@ -79,6 +79,7 @@ function OutboundShipments() {
     deleteOutbound,
     bulkUploadOutbound,
   } = useInventoryStore();
+  const { updateShippingFee } = useBillingStore();
   const { addBilling } = useBillingStore.getState();
   const { setAlert } = useAlertStore();
   const { user } = useAuthStore();
@@ -196,8 +197,14 @@ function OutboundShipments() {
         updated_at: formatDateForMySQL(new Date()), // Ensure updated_at is modified
       };
 
-      // Update the existing shipment instead of adding a new one
-      updateOutbound(updatedShipment); // Update the shipment in the store
+      // Update the existing shipment in the store
+      updateOutbound(updatedShipment);
+
+      // Check if the shipping fee has changed
+      if (editingShipment.shipping_fee !== data.shipping_fee) {
+        await updateShippingFee(data.order_id, data.shipping_fee || 0); // Update the shipping fee in Billings
+      }
+
       setAlert("Outbound shipment updated successfully", "success"); // Show success alert
     } else {
       // For a new shipment, first find the related product by SKU
@@ -215,7 +222,6 @@ function OutboundShipments() {
       // Add the new shipment to the store
       try {
         await addOutbound(shipment);
-        // Show success alert
         setAlert("Outbound Shipment created successfully", "success");
         setEditingShipment(null);
       } catch (error) {

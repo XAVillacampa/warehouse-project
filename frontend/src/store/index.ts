@@ -23,6 +23,7 @@ import {
   deleteOutboundShipmentAPI,
   bulkImportOutboundShipmentsAPI,
 } from "../services/api";
+import { useBillingStore } from "./billing";
 
 interface AlertState {
   message: string | null;
@@ -58,6 +59,10 @@ interface InventoryState {
   bulkUploadOutbound: (outbound: OutboundShipment[]) => void;
   updateOutbound: (outbound: OutboundShipment) => void;
   deleteOutbound: (id: string) => void;
+  updateOutboundShippingFee: (
+    orderId: string,
+    newShippingFee: number
+  ) => Promise<void>;
 }
 
 export const useInventoryStore = create<InventoryState>()(
@@ -251,6 +256,43 @@ export const useInventoryStore = create<InventoryState>()(
           }));
         } catch (error) {
           console.error("Error deleting outbound:", error);
+        }
+      },
+
+      updateOutboundShippingFee: async (
+        orderId: string,
+        newShippingFee: number
+      ) => {
+        try {
+          const outboundShipment = get().outbound.find(
+            (shipment) => shipment.order_id === orderId
+          );
+
+          const outboundId = outboundShipment?.id;
+
+          // Update the shipping fee in the backend
+          const updatedOutbound = await updateOutboundShipmentAPI(outboundId, {
+            ...outboundShipment,
+            shipping_fee: newShippingFee,
+          });
+
+          // Update the state
+          set((state) => ({
+            outbound: state.outbound.map((shipment) =>
+              shipment.order_id === orderId
+                ? {
+                    ...shipment,
+                    shipping_fee: newShippingFee,
+                    updated_at: new Date(),
+                  }
+                : shipment
+            ),
+          }));
+        } catch (error) {
+          console.error(
+            "Error updating shipping fee in outbound shipment:",
+            error
+          );
         }
       },
     }),
