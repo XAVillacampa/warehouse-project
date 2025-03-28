@@ -1607,7 +1607,7 @@ app.post("/api/activate", async (req, res) => {
 // View all billings
 app.get("/api/billings", verifyToken, async (req, res) => {
   try {
-    const [billings] = await db.execute("SELECT * FROM billing");
+    const [billings] = await db.execute("SELECT * FROM Billing");
     res.json(billings);
   } catch (err) {
     console.error(err);
@@ -1629,7 +1629,7 @@ app.post("/api/billings", async (req, res) => {
 
   try {
     const [result] = await db.execute(
-      "INSERT INTO billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO Billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         order_id,
         vendor_number,
@@ -1642,7 +1642,7 @@ app.post("/api/billings", async (req, res) => {
     );
 
     const [newBilling] = await db.execute(
-      "SELECT * FROM billing WHERE id = ?",
+      "SELECT * FROM Billing WHERE id = ?",
       [result.insertId]
     );
     res.status(201).json(newBilling[0]); // Return the full Billing object
@@ -1703,7 +1703,7 @@ app.post("/api/billings/bulk", verifyToken, async (req, res) => {
 
       // Insert the billing into the database
       const [result] = await connection.execute(
-        `INSERT INTO billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on)
+        `INSERT INTO Billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           order_id,
@@ -1790,7 +1790,7 @@ app.put("/api/billings/:id", verifyToken, async (req, res) => {
 
     // Execute the SQL query
     const [result] = await db.execute(
-      `UPDATE billing 
+      `UPDATE Billing 
        SET order_id = ?, vendor_number = ?, shipping_fee = ?, billing_date = ?, 
            notes = ?, status = ?, paid_on = ? 
        WHERE id = ?`,
@@ -1829,7 +1829,7 @@ app.put("/api/billings/:id", verifyToken, async (req, res) => {
 app.delete("/api/billings/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.execute("DELETE FROM billing WHERE id = ?", [id]);
+    const [result] = await db.execute("DELETE FROM Billing WHERE id = ?", [id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Billing not found" });
@@ -1847,7 +1847,7 @@ app.put("/api/billings/:id/mark-paid", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.execute(
-      "UPDATE billing SET status = 'Paid', paid_on = CURRENT_DATE WHERE id = ?",
+      "UPDATE Billing SET status = 'Paid', paid_on = CURRENT_DATE WHERE id = ?",
       [id]
     );
 
@@ -1867,7 +1867,7 @@ app.put("/api/billings/:id/cancel", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.execute(
-      "UPDATE billing SET status = 'Cancelled' WHERE id = ?",
+      "UPDATE Billing SET status = 'Cancelled' WHERE id = ?",
       [id]
     );
 
