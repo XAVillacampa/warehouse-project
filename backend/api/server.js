@@ -10,6 +10,19 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+
+// Validate environment variables
+if (
+  !process.env.DB_HOST ||
+  !process.env.DB_USER ||
+  !process.env.DB_PASSWORD ||
+  !process.env.DB_NAME ||
+  !process.env.DB_PORT
+) {
+  console.error("Missing required environment variables for database connection.");
+  process.exit(1);
+}
+
 app.use(express.json());
 app.use(
   cors({
@@ -17,14 +30,26 @@ app.use(
   })
 );
 
-// Create MySQL connection
+// Create MySQL connection pool
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 0,
+});
+
+// Test the database connection
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
+  console.log("Connected to MySQL database.");
+  connection.release(); // Release the connection back to the pool
 });
 
 // Function to format a Date object to 'YYYY-MM-DD'
@@ -1244,6 +1269,34 @@ app.delete("/api/outbound-shipments/:id", async (req, res) => {
   } catch (err) {
     console.error("Error deleting outbound shipment:", err);
     res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+});
+
+/* ------------------- CLAIMS CRUD ------------------- */
+
+// Get all claims with related outbound shipment data
+app.get("/api/claims", async (req, res) => {
+  try {
+    const [claims] = await db.execute(`
+      SELECT 
+        Claims.*,
+        Outbound_Shipments.customer_name,
+        Outbound_Shipments.country,
+        Outbound_Shipments.address1,
+        Outbound_Shipments.address2,
+        Outbound_Shipments.zip_code,
+        Outbound_Shipments.city,
+        Outbound_Shipments.state,
+        Outbound_Shipments.tracking_number
+      FROM Claims
+      INNER JOIN Outbound_Shipments
+      ON Claims.order_id = Outbound_Shipments.order_id
+    `);
+
+    res.status(200).json(claims);
+  } catch (error) {
+    console.error("Error fetching claims:", error);
+    res.status(500).json({ error: "Failed to fetch claims" });
   }
 });
 
