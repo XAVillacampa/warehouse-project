@@ -1,4 +1,4 @@
--- Active: 1738731268661@@127.0.0.1@3306@itemsdb
+-- Active: 1743145661160@@wms-db-cluster-instance-1.ctmecumowr62.ap-southeast-1.rds.amazonaws.com@3306@ItemsDB
 CREATE DATABASE `ItemsDB`;
 
 USE `ItemsDB`;
@@ -86,7 +86,7 @@ ALTER TABLE `inbound_shipments` CHANGE `shipment_id` `id` INT AUTO_INCREMENT NOT
 select
   *
 from
-  inbound_shipments;
+  `Inbound_Shipments`;
 
 INSERT INTO
   Inbound_Shipments (
@@ -151,6 +151,8 @@ CREATE TABLE
     UNIQUE (tracking_number)
   );
 
+SELECT DISTINCT warehouse_code FROM Inventory;
+
 -- Run this if you want to add a unique constraint to the tracking column
 ALTER TABLE Outbound_Shipments MODIFY COLUMN tracking_number VARCHAR(50) UNIQUE NULL;
 
@@ -160,7 +162,7 @@ ALTER TABLE `Outbound_Shipments` CHANGE `tracking` `tracking_number` VARCHAR(50)
 select
   *
 from
-  outbound_shipments;
+  `Outbound_Shipments`;
 
 INSERT INTO
   Outbound_Shipments (
@@ -177,7 +179,7 @@ INSERT INTO
     zip_code,
     city,
     state,
-    tracking,
+    tracking_number,
     shipping_fee,
     note,
     image_link,
@@ -242,7 +244,7 @@ ALTER TABLE Claims MODIFY COLUMN reason TEXT NULL;
 select
   *
 from
-  claims;
+  `Claims`;
 
 INSERT INTO
   Claims (
@@ -354,7 +356,7 @@ VALUES
   (CURDATE (), 0);
 
 CREATE TABLE
-  billing (
+  Billing (
     id INT PRIMARY KEY AUTO_INCREMENT,
     order_id VARCHAR(20) NOT NULL, -- Foreign key to Outbound_Shipments table
     vendor_number VARCHAR(50),
@@ -368,4 +370,4 @@ CREATE TABLE
     FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id)
   );
 
-DROP TABLE billing;
+DROP TABLE Billing;

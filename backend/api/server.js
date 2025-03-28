@@ -74,7 +74,7 @@ function formatDateForMySQL(date) {
 // Get all products
 app.get("/api/inventory", async (req, res) => {
   try {
-    const [results] = await db.execute("SELECT * FROM inventory;");
+    const [results] = await db.execute("SELECT * FROM Inventory;");
     // console.log("Fetched Products: ", results);
     res.json(results);
   } catch (err) {
@@ -122,7 +122,7 @@ app.post("/api/inventory", async (req, res) => {
 
     // 🔍 Check if SKU already exists
     const [existing] = await db.execute(
-      "SELECT sku FROM inventory WHERE sku = ?",
+      "SELECT sku FROM Inventory WHERE sku = ?",
       [sku]
     );
     if (existing.length > 0) {
@@ -133,7 +133,7 @@ app.post("/api/inventory", async (req, res) => {
 
     // Insert into the database
     await db.execute(
-      `INSERT INTO inventory 
+      `INSERT INTO Inventory 
       (product_name, sku, warehouse_code, stock_check, outbound, weight, height, length, width, cbm, vendor_number, created_at, updated_at)  
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
@@ -193,7 +193,7 @@ app.put("/api/inventory/:sku", async (req, res) => {
 
     // Check if product exists before updating
     const [existing] = await db.execute(
-      "SELECT sku FROM inventory WHERE sku = ?",
+      "SELECT sku FROM Inventory WHERE sku = ?",
       [sku]
     );
     if (existing.length === 0) {
@@ -204,7 +204,7 @@ app.put("/api/inventory/:sku", async (req, res) => {
 
     // Correct the SQL query
     await db.execute(
-      `UPDATE inventory 
+      `UPDATE Inventory 
       SET product_name = ?, warehouse_code = ?, stock_check = ?, outbound = ?, 
       weight = ?, height = ?, length = ?, width = ?, cbm = ?, vendor_number = ?, 
       updated_at = NOW() 
@@ -236,7 +236,7 @@ app.delete("/api/inventory/:sku", async (req, res) => {
   const { sku } = req.params;
   try {
     const [existing] = await db.execute(
-      "SELECT sku FROM inventory WHERE sku = ?",
+      "SELECT sku FROM Inventory WHERE sku = ?",
       [sku]
     );
     if (existing.length === 0) {
@@ -258,7 +258,7 @@ app.delete("/api/inventory/:sku", async (req, res) => {
 // Get all inbound shipments
 app.get("/api/inbound-shipments", async (req, res) => {
   try {
-    const [results] = await db.execute("SELECT * FROM inbound_shipments;");
+    const [results] = await db.execute("SELECT * FROM Inbound_Shipments;");
     res.json(results);
   } catch (err) {
     console.error("Error fetching inbound shipments:", err);
@@ -304,7 +304,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
     try {
       // Check if the SKU exists in the inventory table
       const [inventory] = await connection.execute(
-        "SELECT sku FROM inventory WHERE sku = ?",
+        "SELECT sku FROM Inventory WHERE sku = ?",
         [sku]
       );
 
@@ -319,7 +319,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
 
       // Check if the warehouse_code exists in the inventory table
       const [warehouse] = await connection.execute(
-        "SELECT warehouse_code FROM inventory WHERE warehouse_code = ?",
+        "SELECT warehouse_code FROM Inventory WHERE warehouse_code = ?",
         [warehouse_code]
       );
 
@@ -335,7 +335,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
 
       // Insert inbound shipment
       await connection.execute(
-        `INSERT INTO inbound_shipments 
+        `INSERT INTO Inbound_Shipments 
         (shipping_date, box_label, sku, warehouse_code, item_quantity, arriving_date, tracking_number, vendor_number) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -432,7 +432,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
 
         // Check if the SKU exists in the inventory table
         const [inventory] = await connection.execute(
-          "SELECT sku FROM inventory WHERE sku = ?",
+          "SELECT sku FROM Inventory WHERE sku = ?",
           [sku]
         );
 
@@ -447,7 +447,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
 
         // Check if the warehouse_code exists in the inventory table
         const [warehouse] = await connection.execute(
-          "SELECT warehouse_code FROM inventory WHERE warehouse_code = ?",
+          "SELECT warehouse_code FROM Inventory WHERE warehouse_code = ?",
           [warehouse_code]
         );
 
@@ -466,7 +466,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
 
         // Insert inbound shipment
         await connection.execute(
-          `INSERT INTO inbound_shipments
+          `INSERT INTO Inbound_Shipments
           (shipping_date, box_label, sku, warehouse_code, item_quantity, arriving_date, tracking_number, vendor_number) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
           [
@@ -557,7 +557,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
 
     // Check if the shipment exists
     const [existing] = await db.execute(
-      "SELECT * FROM inbound_shipments WHERE id = ?",
+      "SELECT * FROM Inbound_Shipments WHERE id = ?",
       [id]
     );
 
@@ -687,7 +687,7 @@ app.delete("/api/inbound-shipments/:id", async (req, res) => {
 // Get all outbound shipments
 app.get("/api/outbound-shipments", async (req, res) => {
   try {
-    const [results] = await db.execute("SELECT * FROM outbound_shipments;");
+    const [results] = await db.execute("SELECT * FROM Outbound_Shipments;");
     res.json(results);
   } catch (err) {
     console.error("Error fetching outbound shipments:", err);
@@ -779,7 +779,6 @@ app.post("/api/outbound-shipments", async (req, res) => {
   } = req.body;
 
   try {
-    // Start a transaction
     const connection = await db.getConnection();
     await connection.beginTransaction();
 
@@ -808,7 +807,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
 
     // Fetch stock_check and outbound from the inventory table
     const [inventory] = await connection.execute(
-      "SELECT stock_check, outbound FROM inventory WHERE sku = ?",
+      "SELECT stock_check, outbound FROM Inventory WHERE sku = ?",
       [sku]
     );
 
@@ -821,7 +820,6 @@ app.post("/api/outbound-shipments", async (req, res) => {
     }
 
     const stock_check = inventory[0].stock_check;
-    const outbound = inventory[0].outbound;
 
     // Ensure sufficient stock
     if (stock_check < item_quantity) {
@@ -842,31 +840,9 @@ app.post("/api/outbound-shipments", async (req, res) => {
     // Format the order_date to 'YYYY-MM-DD'
     const formattedOrderDate = formatDateForMySQL(new Date(order_date));
 
-    // Log the parameters to debug
-    console.log("Add Outbound Shipment Parameters:", {
-      order_date: formattedOrderDate,
-      order_id,
-      sku,
-      item_quantity,
-      warehouse_code,
-      stock_check,
-      customer_name,
-      country,
-      address1,
-      address2: address2Value,
-      zip_code,
-      city,
-      state,
-      tracking_number: trackingNumberValue,
-      shipping_fee: shippingFeeValue,
-      note: noteValue,
-      image_link: imageLinkValue,
-      vendor_number,
-    });
-
     // Insert the new outbound shipment
-    await connection.execute(
-      `INSERT INTO outbound_shipments 
+    const [result] = await connection.execute(
+      `INSERT INTO Outbound_Shipments 
       (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -893,11 +869,35 @@ app.post("/api/outbound-shipments", async (req, res) => {
 
     // Update the inventory table
     await connection.execute(
-      `UPDATE inventory 
+      `UPDATE Inventory 
       SET stock_check = stock_check - ?, outbound = outbound + ? 
       WHERE sku = ?`,
       [item_quantity, item_quantity, sku]
     );
+
+    const insertedShipments = [
+      {
+        id: result.insertId,
+        order_date: formattedOrderDate,
+        order_id,
+        sku,
+        item_quantity,
+        warehouse_code,
+        stock_check,
+        customer_name,
+        country,
+        address1,
+        address2: address2Value,
+        zip_code,
+        city,
+        state,
+        tracking_number: trackingNumberValue,
+        shipping_fee: shippingFeeValue,
+        note: noteValue,
+        image_link: imageLinkValue,
+        vendor_number,
+      },
+    ];
 
     // Commit the transaction
     await connection.commit();
@@ -906,7 +906,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Outbound shipment added successfully!",
-      order_id,
+      insertedShipments,
     });
   } catch (err) {
     console.error("Error adding outbound shipment:", err);
@@ -918,7 +918,7 @@ app.post("/api/outbound-shipments", async (req, res) => {
 app.post("/api/outbound-shipments/bulk", async (req, res) => {
   const shipments = req.body;
 
-  // Log the received shipments for debugging
+  // Log the received outbound shipments for debugging
   console.log("Received outbound shipments:", shipments);
 
   if (!Array.isArray(shipments)) {
@@ -930,6 +930,8 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
   try {
     const connection = await db.getConnection();
     await connection.beginTransaction();
+
+    const insertedShipments = [];
 
     for (const shipment of shipments) {
       const {
@@ -982,7 +984,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
 
       // Fetch stock_check and outbound from the inventory table
       const [inventory] = await connection.execute(
-        "SELECT stock_check, outbound FROM inventory WHERE sku = ?",
+        "SELECT stock_check, outbound FROM Inventory WHERE sku = ?",
         [sku]
       );
 
@@ -1017,8 +1019,8 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
       const formattedOrderDate = formatDateForMySQL(new Date(order_date));
 
       // Insert the new outbound shipment
-      await connection.execute(
-        `INSERT INTO outbound_shipments 
+      const [result] = await connection.execute(
+        `INSERT INTO Outbound_Shipments 
         (order_date, order_id, sku, item_quantity, warehouse_code, stock_check, customer_name, country, address1, address2, zip_code, city, state, tracking_number, shipping_fee, note, image_link, vendor_number) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
@@ -1043,9 +1045,32 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
         ]
       );
 
+      // Add the newly inserted shipment to the array
+      insertedShipments.push({
+        id: result.insertId,
+        order_date: formattedOrderDate,
+        order_id,
+        sku,
+        item_quantity,
+        warehouse_code,
+        stock_check,
+        customer_name,
+        country,
+        address1,
+        address2: address2Value,
+        zip_code,
+        city,
+        state,
+        tracking_number,
+        shipping_fee,
+        note: noteValue,
+        image_link: imageLinkValue,
+        vendor_number,
+      });
+
       // Update the inventory table
       await connection.execute(
-        `UPDATE inventory 
+        `UPDATE Inventory 
         SET stock_check = stock_check - ?, outbound = outbound + ? 
         WHERE sku = ?;`,
         [item_quantity, item_quantity, sku]
@@ -1059,6 +1084,7 @@ app.post("/api/outbound-shipments/bulk", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Outbound shipments added successfully!",
+      updatedShipments: insertedShipments,
     });
   } catch (err) {
     console.error("Error adding outbound shipments:", err);
@@ -1090,7 +1116,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
 
   try {
     const [existing] = await db.execute(
-      "SELECT id, item_quantity FROM outbound_shipments WHERE id = ?",
+      "SELECT id, item_quantity FROM Outbound_Shipments WHERE id = ?",
       [id]
     );
     if (existing.length === 0) {
@@ -1103,7 +1129,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
 
     // Fetch stock_check and outbound from the inventory table
     const [inventory] = await db.execute(
-      "SELECT stock_check, outbound FROM inventory WHERE sku = ?",
+      "SELECT stock_check, outbound FROM Inventory WHERE sku = ?",
       [sku]
     );
 
@@ -1114,7 +1140,6 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
     }
 
     const stock_check = inventory[0].stock_check;
-    const outbound = inventory[0].outbound;
 
     // Ensure sufficient stock if item_quantity has increased
     if (
@@ -1162,7 +1187,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
     try {
       // Update the outbound shipment
       await connection.execute(
-        `UPDATE outbound_shipments 
+        `UPDATE Outbound_Shipments 
         SET order_date = ?, sku = ?, item_quantity = ?, warehouse_code = ?, customer_name = ?, country = ?, address1 = ?, address2 = ?, zip_code = ?, city = ?, state = ?, tracking_number = ?, shipping_fee = ?, note = ?, image_link = ?, vendor_number = ? 
         WHERE id = ?`,
         [
@@ -1190,7 +1215,7 @@ app.put("/api/outbound-shipments/:id", async (req, res) => {
       if (item_quantity !== oldItemQuantity) {
         const quantityDifference = item_quantity - oldItemQuantity;
         await connection.execute(
-          `UPDATE inventory 
+          `UPDATE Inventory 
           SET stock_check = stock_check - ?, outbound = outbound + ? 
           WHERE sku = ?`,
           [quantityDifference, quantityDifference, sku]
@@ -1223,7 +1248,7 @@ app.delete("/api/outbound-shipments/:id", async (req, res) => {
   try {
     // Fetch the outbound shipment to get the item_quantity and sku
     const [existing] = await db.execute(
-      "SELECT id, sku, item_quantity FROM outbound_shipments WHERE id = ?",
+      "SELECT id, sku, item_quantity FROM Outbound_Shipments WHERE id = ?",
       [id]
     );
     if (existing.length === 0) {
@@ -1240,13 +1265,13 @@ app.delete("/api/outbound-shipments/:id", async (req, res) => {
 
     try {
       // Delete the outbound shipment
-      await connection.execute("DELETE FROM outbound_shipments WHERE id = ?", [
+      await connection.execute("DELETE FROM Outbound_Shipments WHERE id = ?", [
         id,
       ]);
 
       // Update the inventory table
       await connection.execute(
-        `UPDATE inventory 
+        `UPDATE Inventory 
         SET stock_check = stock_check + ?, outbound = outbound - ? 
         WHERE sku = ?`,
         [item_quantity, item_quantity, sku]
@@ -1279,7 +1304,7 @@ app.get("/api/claims", async (req, res) => {
   try {
     const [claims] = await db.execute(`
       SELECT 
-        claims.*,
+        Claims.*,
         Outbound_Shipments.customer_name,
         Outbound_Shipments.country,
         Outbound_Shipments.address1,
@@ -1290,7 +1315,7 @@ app.get("/api/claims", async (req, res) => {
         Outbound_Shipments.tracking_number
       FROM claims
       INNER JOIN Outbound_Shipments
-      ON claims.order_id = Outbound_Shipments.order_id
+      ON Claims.order_id = Outbound_Shipments.order_id
     `);
 
     res.status(200).json(claims);
@@ -1308,7 +1333,7 @@ app.post("/api/login", async (req, res) => {
   try {
     // Execute query and destructure rows
     const [rows] = await db.execute(
-      "SELECT * FROM users WHERE LOWER(email) = LOWER(?)",
+      "SELECT * FROM Users WHERE LOWER(email) = LOWER(?)",
       [email]
     );
 
@@ -1339,7 +1364,7 @@ app.post("/api/login", async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Update the user's password in the database
-      await db.execute("UPDATE users SET password = ? WHERE id = ?", [
+      await db.execute("UPDATE Users SET password = ? WHERE id = ?", [
         hashedPassword,
         user.id,
       ]);
@@ -1360,7 +1385,7 @@ app.post("/api/login", async (req, res) => {
 
     // Update last_login timestamp
     await db.execute(
-      "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE Users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
       [user.id]
     );
 
@@ -1379,7 +1404,7 @@ app.post("/api/login", async (req, res) => {
 // Fetch all users
 app.get("/api/users", verifyToken, async (req, res) => {
   try {
-    const [users] = await db.execute("SELECT * FROM users");
+    const [users] = await db.execute("SELECT * FROM Users");
 
     if (!Array.isArray(users)) {
       console.error("Invalid database response for users:", users);
@@ -1412,7 +1437,7 @@ app.post("/api/users", async (req, res) => {
 
     // Check if email already exists
     const [existing] = await db.execute(
-      "SELECT id FROM users WHERE LOWER(email) = LOWER(?)",
+      "SELECT id FROM Users WHERE LOWER(email) = LOWER(?)",
       [email]
     );
     if (existing.length > 0) {
@@ -1425,14 +1450,14 @@ app.post("/api/users", async (req, res) => {
     // Insert the new user
     console.log("Inserting user into database...");
     const [result] = await db.execute(
-      `INSERT INTO users (email, username, password, role, vendor_number, activity_status)
+      `INSERT INTO Users (email, username, password, role, vendor_number, activity_status)
        VALUES (?, ?, ?, ?, ?, 'active')`,
       [email, username, hashedPassword, role, finalVendorNumber]
     );
     console.log("Insert result:", result);
 
     // Retrieve the newly created user
-    const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [
+    const [rows] = await db.execute("SELECT * FROM Users WHERE id = ?", [
       result.insertId,
     ]);
     const newUser = rows[0];
@@ -1453,13 +1478,13 @@ app.put("/api/users/:id", verifyToken, async (req, res) => {
   try {
     // Update the user
     await db.execute(
-      `UPDATE users
+      `UPDATE Users
        SET username = ?, role = ?, vendor_number = ?, activity_status = ?
        WHERE id = ?`,
       [username, role, vendor_number, activity_status, userId]
     );
     // Retrieve the updated user
-    const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [
+    const [rows] = await db.execute("SELECT * FROM Users WHERE id = ?", [
       userId,
     ]);
     // Remove password before sending
@@ -1478,7 +1503,7 @@ app.delete("/api/users/:id", verifyToken, async (req, res) => {
   try {
     // Ensure not deleting the last admin.
     const [admins] = await db.execute(
-      "SELECT id FROM users WHERE role = ? AND id != ?",
+      "SELECT id FROM Users WHERE role = ? AND id != ?",
       ["admin", userId]
     );
     if (admins.length === 0) {
@@ -1486,7 +1511,7 @@ app.delete("/api/users/:id", verifyToken, async (req, res) => {
         .status(400)
         .json({ message: "Cannot delete the last admin account" });
     }
-    await db.execute("DELETE FROM users WHERE id = ?", [userId]);
+    await db.execute("DELETE FROM Users WHERE id = ?", [userId]);
     res.json({ message: "User deleted" });
   } catch (err) {
     console.error(err);
@@ -1498,7 +1523,7 @@ app.delete("/api/users/:id", verifyToken, async (req, res) => {
 app.put("/api/users/:id/suspend", verifyToken, async (req, res) => {
   const userId = req.params.id;
   try {
-    await db.execute("UPDATE users SET activity_status = ? WHERE id = ?", [
+    await db.execute("UPDATE Users SET activity_status = ? WHERE id = ?", [
       "suspended",
       userId,
     ]);
@@ -1513,7 +1538,7 @@ app.put("/api/users/:id/suspend", verifyToken, async (req, res) => {
 app.put("/api/users/:id/activate", verifyToken, async (req, res) => {
   const userId = req.params.id;
   try {
-    await db.execute("UPDATE users SET activity_status = ? WHERE id = ?", [
+    await db.execute("UPDATE Users SET activity_status = ? WHERE id = ?", [
       "active",
       userId,
     ]);
@@ -1535,7 +1560,7 @@ app.put("/api/users/:id/reset-password", verifyToken, async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.execute("UPDATE users SET password = ? WHERE id = ?", [
+    await db.execute("UPDATE Users SET password = ? WHERE id = ?", [
       hashedPassword,
       userId,
     ]);
@@ -1557,7 +1582,7 @@ app.post("/api/activate", async (req, res) => {
     // Decode the token using our helper function.
     const decoded = decodeToken(token);
     const [rows] = await db.execute(
-      "SELECT * FROM users WHERE LOWER(email) = LOWER(?)",
+      "SELECT * FROM Users WHERE LOWER(email) = LOWER(?)",
       [decoded.email]
     );
     const user = rows[0];
@@ -1565,7 +1590,7 @@ app.post("/api/activate", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     await db.execute(
-      "UPDATE users SET password = ?, activity_status = ? WHERE id = ?",
+      "UPDATE Users SET password = ?, activity_status = ? WHERE id = ?",
       [hashedPassword, "active", user.id]
     );
     res.json({ message: "User activated successfully" });
@@ -1624,6 +1649,97 @@ app.post("/api/billings", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error creating billing" });
+  }
+});
+
+// Bulk upload billings
+app.post("/api/billings/bulk", verifyToken, async (req, res) => {
+  const billings = req.body;
+
+  // Validate that the input is an array
+  if (!Array.isArray(billings)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid data format. Expected an array." });
+  }
+
+  try {
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    const insertedBillings = []; // Array to store newly inserted billing records
+
+    for (const billing of billings) {
+      const {
+        order_id,
+        vendor_number,
+        shipping_fee,
+        billing_date,
+        notes,
+        status,
+        paid_on,
+      } = billing;
+
+      // Validate required fields
+      if (!order_id) {
+        await connection.rollback();
+        connection.release();
+        return res
+          .status(400)
+          .json({ message: "Missing required field: order_id" });
+      }
+
+      // Replace undefined values with defaults or null
+      const formattedVendorNumber = vendor_number || null;
+      const formattedShippingFee = shipping_fee || 0; // Default to 0 if undefined
+      const formattedBillingDate = billing_date
+        ? formatDateForMySQL(new Date(billing_date))
+        : null;
+      const formattedNotes = notes || null;
+      const formattedStatus = status || "Pending"; // Default to "Pending"
+      const formattedPaidOn = paid_on
+        ? formatDateForMySQL(new Date(paid_on))
+        : null;
+
+      // Insert the billing into the database
+      const [result] = await connection.execute(
+        `INSERT INTO billing (order_id, vendor_number, shipping_fee, billing_date, notes, status, paid_on)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          order_id,
+          formattedVendorNumber,
+          formattedShippingFee,
+          formattedBillingDate,
+          formattedNotes,
+          formattedStatus,
+          formattedPaidOn,
+        ]
+      );
+
+      // Add the newly inserted billing to the array
+      insertedBillings.push({
+        id: result.insertId,
+        order_id,
+        vendor_number: formattedVendorNumber,
+        shipping_fee: formattedShippingFee,
+        billing_date: formattedBillingDate,
+        notes: formattedNotes,
+        status: formattedStatus,
+        paid_on: formattedPaidOn,
+      });
+    }
+
+    // Commit the transaction
+    await connection.commit();
+    connection.release();
+
+    res.status(201).json({
+      message: "Billings uploaded successfully!",
+      insertedBillings, // Return the inserted billings
+    });
+  } catch (err) {
+    console.error("Error during bulk upload of billings:", err);
+    res.status(500).json({ message: "Server error during bulk upload" });
   }
 });
 
