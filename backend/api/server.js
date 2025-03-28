@@ -258,7 +258,7 @@ app.delete("/api/inventory/:sku", async (req, res) => {
 // Get all inbound shipments
 app.get("/api/inbound-shipments", async (req, res) => {
   try {
-    const [results] = await db.execute("SELECT * FROM Inbound_Shipments;");
+    const [results] = await db.execute("SELECT * FROM inbound_shipments;");
     res.json(results);
   } catch (err) {
     console.error("Error fetching inbound shipments:", err);
@@ -335,7 +335,7 @@ app.post("/api/inbound-shipments", async (req, res) => {
 
       // Insert inbound shipment
       await connection.execute(
-        `INSERT INTO Inbound_Shipments 
+        `INSERT INTO inbound_shipments 
         (shipping_date, box_label, sku, warehouse_code, item_quantity, arriving_date, tracking_number, vendor_number) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -466,7 +466,7 @@ app.post("/api/inbound-shipments/bulk", async (req, res) => {
 
         // Insert inbound shipment
         await connection.execute(
-          `INSERT INTO Inbound_Shipments 
+          `INSERT INTO inbound_shipments
           (shipping_date, box_label, sku, warehouse_code, item_quantity, arriving_date, tracking_number, vendor_number) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
           [
@@ -557,7 +557,7 @@ app.put("/api/inbound-shipments/:id", async (req, res) => {
 
     // Check if the shipment exists
     const [existing] = await db.execute(
-      "SELECT * FROM Inbound_Shipments WHERE id = ?",
+      "SELECT * FROM inbound_shipments WHERE id = ?",
       [id]
     );
 
@@ -1279,7 +1279,7 @@ app.get("/api/claims", async (req, res) => {
   try {
     const [claims] = await db.execute(`
       SELECT 
-        Claims.*,
+        claims.*,
         Outbound_Shipments.customer_name,
         Outbound_Shipments.country,
         Outbound_Shipments.address1,
@@ -1288,9 +1288,9 @@ app.get("/api/claims", async (req, res) => {
         Outbound_Shipments.city,
         Outbound_Shipments.state,
         Outbound_Shipments.tracking_number
-      FROM Claims
+      FROM claims
       INNER JOIN Outbound_Shipments
-      ON Claims.order_id = Outbound_Shipments.order_id
+      ON claims.order_id = Outbound_Shipments.order_id
     `);
 
     res.status(200).json(claims);
