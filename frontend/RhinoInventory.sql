@@ -1,7 +1,9 @@
--- Active: 1743145661160@@wms-db-cluster-instance-1.ctmecumowr62.ap-southeast-1.rds.amazonaws.com@3306@ItemsDB
+-- Active: 1743391294931@@wms-db-cluster-instance-1.ctmecumowr62.ap-southeast-1.rds.amazonaws.com@3306@ItemsDB
 CREATE DATABASE `ItemsDB`;
 
-USE `ItemsDB`;
+USE ItemsDB;
+
+SHOW TABLES;
 
 drop database `ItemsDB`;
 
@@ -60,7 +62,7 @@ VALUES
 select
   *
 from
-  inventory;
+  Inventory;
 
 CREATE TABLE
   Inbound_Shipments (
