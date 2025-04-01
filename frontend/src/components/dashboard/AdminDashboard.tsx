@@ -2,16 +2,6 @@ import React from "react";
 import { Package, TrendingDown, TrendingUp, AlertTriangle } from "lucide-react";
 import { useInventoryStore } from "../../store";
 import { DashboardCard } from "./DashboardCard";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 
 function AdminDashboard() {
   const { inventory, inbound, outbound } = useInventoryStore();
