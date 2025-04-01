@@ -14,48 +14,48 @@ import {
 } from "recharts";
 
 function AdminDashboard() {
-  const { products, transactions } = useInventoryStore();
+  const { inventory, inbound, outbound } = useInventoryStore();
 
-  const totalProducts = products.length;
-  const lowStockItems = products.filter((p) => p.quantity <= p.minStockLevel);
+  const totalProducts = inventory.length;
+  const lowStockItems = inventory.filter((p) => p.stock_check <= 50);
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  // Filter completed transactions from the last 30 days
-  const recentTransactions = transactions.filter(
-    (t) => new Date(t.createdAt) >= thirtyDaysAgo && t.status === "completed"
+  // Filter inbound and outbound transactions from the last 30 days
+  const recentInbound = inbound.filter(
+    (t) => new Date(t.created_at) >= thirtyDaysAgo
+  );
+  const recentOutbound = outbound.filter(
+    (t) => new Date(t.created_at) >= thirtyDaysAgo
   );
 
-  // Group inbound and outbound transactions
-  const inboundCount = recentTransactions.filter(
-    (t) => t.type === "inbound"
-  ).length;
-  const outboundCount = recentTransactions.filter(
-    (t) => t.type === "outbound"
-  ).length;
+  // Count inbound and outbound transactions
+  const inboundCount = recentInbound.length;
+  const outboundCount = recentOutbound.length;
 
-  // Helper function to calculate trends
-  const calculateTrend = (type: "inbound" | "outbound") => {
+  // Updated helper function to calculate trends
+  const calculateTrend = (transactions: any[], totalCount: number) => {
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-    const recent = recentTransactions.filter(
-      (t) =>
-        t.type === type &&
-        t.status === "completed" &&
-        new Date(t.createdAt) >= fifteenDaysAgo
+    const recent = transactions.filter(
+      (t) => new Date(t.created_at) >= fifteenDaysAgo
     ).length;
 
-    const previous = recentTransactions.filter(
+    const previous = transactions.filter(
       (t) =>
-        t.type === type &&
-        t.status === "completed" &&
-        new Date(t.createdAt) >= thirtyDaysAgo &&
-        new Date(t.createdAt) < fifteenDaysAgo
+        new Date(t.created_at) >= thirtyDaysAgo &&
+        new Date(t.created_at) < fifteenDaysAgo
     ).length;
 
-    if (previous === 0) return { trend: "neutral", value: "No previous data" };
+    if (previous === 0) {
+      return {
+        trend: recent > 0 ? "up" : "neutral",
+        value: recent > 0 ? "New activity" : "No previous data",
+      };
+    }
+
     const change = ((recent - previous) / previous) * 100;
     return {
       trend: change > 0 ? "up" : change < 0 ? "down" : "neutral",
@@ -63,26 +63,26 @@ function AdminDashboard() {
     };
   };
 
-  const inboundTrend = calculateTrend("inbound");
-  const outboundTrend = calculateTrend("outbound");
+  const inboundTrend = calculateTrend(recentInbound, inboundCount);
+  const outboundTrend = calculateTrend(recentOutbound, outboundCount);
 
-  // Step 1: Aggregate products by vendorNumber
-  const aggregatedData = products.reduce((acc, item) => {
-    // If vendorNumber already exists in accumulator, aggregate the data
-    if (acc[item.vendorNumber]) {
-      acc[item.vendorNumber].stockLevel += item.quantity;
-      acc[item.vendorNumber].inbound += inboundCount;
-      acc[item.vendorNumber].outbound += outboundCount;
-      acc[item.vendorNumber].lowStock +=
-        item.quantity <= item.minStockLevel ? item.quantity : 0;
+  // Step 1: Aggregate products by vendor_number
+  const aggregatedData = inventory.reduce((acc, item) => {
+    // If vendor_number already exists in accumulator, aggregate the data
+    if (acc[item.vendor_number]) {
+      acc[item.vendor_number].stockLevel += item.stock_check;
+      acc[item.vendor_number].inbound += inboundCount;
+      acc[item.vendor_number].outbound += outboundCount;
+      acc[item.vendor_number].lowStock +=
+        item.stock_check <= 50 ? item.stock_check : 0;
     } else {
-      // If vendorNumber is not in accumulator, initialize it
-      acc[item.vendorNumber] = {
-        vendorNumber: item.vendorNumber,
-        stockLevel: item.quantity,
+      // If vendor_number is not in accumulator, initialize it
+      acc[item.vendor_number] = {
+        vendorNumber: item.vendor_number,
+        stockLevel: item.stock_check,
         inbound: inboundCount,
         outbound: outboundCount,
-        lowStock: item.quantity <= item.minStockLevel ? item.quantity : 0,
+        lowStock: item.stock_check <= 50 ? item.stock_check : 0,
       };
     }
     return acc;
@@ -127,7 +127,7 @@ function AdminDashboard() {
       />
 
       {/* Stacked Bar Chart with Stock Level, Inbound, Outbound, and Low Stock Data */}
-      {products.length > 0 && (
+      {inventory.length > 0 && (
         <div className="col-span-1 sm:col-span-2 lg:col-span-4">
           <h3 className="text-xl font-semibold mb-4 text-black dark:text-white">
             Products Data with Total Stock, Inbound, Outbound, and Low Stock

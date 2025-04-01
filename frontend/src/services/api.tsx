@@ -405,6 +405,33 @@ export const addBillingAPI = async (billing: NewBilling) => {
   }
 };
 
+// Bulk upload billings
+export const bulkUploadBillingsAPI = async (billings: NewBilling[]) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No authentication token found. Redirecting to login...");
+      return;
+    }
+
+    const response = await axios.post(
+      `${API_BASE_URL}/billings/bulk`,
+      billings,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Bulk upload billings response:", response.data);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error bulk uploading billings");
+  }
+};
+
 // Update a billing
 export const updateBillingAPI = async (billingId, billing) => {
   try {

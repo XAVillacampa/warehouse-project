@@ -8,6 +8,7 @@ import {
   markBillingAsPaidAPI,
   cancelBillingAPI,
   fetchBillingsAPI,
+  bulkUploadBillingsAPI, // Import the bulk upload API function
 } from "../services/api"; // Import API functions
 import { useInventoryStore } from ".";
 
@@ -20,6 +21,7 @@ interface BillingState {
   cancelBilling: (billingId: number) => Promise<void>;
   fetchBillings: () => Promise<void>;
   updateShippingFee: (orderId: string, newShippingFee: number) => Promise<void>; // Add this line
+  bulkUploadBillings: (billings: NewBilling[]) => Promise<void>; // Add this line
 }
 
 export const useBillingStore = create<BillingState>()(
@@ -67,10 +69,10 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billing.id
                 ? {
-                    ...billing,
-                    shipping_fee: Number(billing.shipping_fee),
-                    updated_at: new Date(),
-                  }
+                  ...billing,
+                  shipping_fee: Number(billing.shipping_fee),
+                  updated_at: new Date(),
+                }
                 : b
             ),
           }));
@@ -104,11 +106,11 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billingId
                 ? {
-                    ...b,
-                    status: "Paid" as BillingStatus,
-                    paid_on: new Date(),
-                    updated_at: new Date(),
-                  }
+                  ...b,
+                  status: "Paid" as BillingStatus,
+                  paid_on: new Date(),
+                  updated_at: new Date(),
+                }
                 : b
             ),
           }));
@@ -124,10 +126,10 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billingId
                 ? {
-                    ...b,
-                    status: "Cancelled" as BillingStatus,
-                    updated_at: new Date(),
-                  }
+                  ...b,
+                  status: "Cancelled" as BillingStatus,
+                  updated_at: new Date(),
+                }
                 : b
             ),
           }));
@@ -160,15 +162,34 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billingId
                 ? {
-                    ...b,
-                    shipping_fee: newShippingFee,
-                    updated_at: new Date(),
-                  }
+                  ...b,
+                  shipping_fee: newShippingFee,
+                  updated_at: new Date(),
+                }
                 : b
             ),
           }));
         } catch (error) {
           console.error("Error updating shipping fee in billing:", error);
+        }
+      },
+
+      bulkUploadBillings: async (billings: NewBilling[]) => {
+        try {
+          const response = await bulkUploadBillingsAPI(billings);
+
+          // Add the uploaded billings to the state
+          set((state) => ({
+            billings: [
+              ...state.billings,
+              ...response.map((billing) => ({
+                ...billing,
+                shipping_fee: Number(billing.shipping_fee), // Ensure shipping_fee is a number
+              })),
+            ],
+          }));
+        } catch (error) {
+          console.error("Error bulk uploading billings:", error);
         }
       },
     }),

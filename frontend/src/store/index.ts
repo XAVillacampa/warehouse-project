@@ -219,14 +219,27 @@ export const useInventoryStore = create<InventoryState>()(
       // Bulk import outbound shipments
       bulkUploadOutbound: async (outbound) => {
         try {
+          // Call the backend API to bulk upload outbound shipments
           const result = await bulkImportOutboundShipmentsAPI(outbound);
-          if (result.success && result.outbound) {
+
+          // Check if the API call was successful and contains updated shipments
+          if (result.success && result.updatedShipments) {
+            // Store the updated shipments in a variable
+            const updatedShipments = result.updatedShipments;
+
+            // Update the state with the new shipments
             set((state) => ({
-              outbound: [...state.outbound, ...result.outbound],
+              outbound: [...state.outbound, ...updatedShipments],
             }));
+
+            // Return the updated shipments for further use
+            return updatedShipments;
           }
+
+          return [];
         } catch (error) {
           console.error("Error bulk uploading outbound shipments:", error);
+          return [];
         }
       },
 

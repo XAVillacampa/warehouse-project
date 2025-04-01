@@ -11,7 +11,7 @@ import {
 import Modal from "../components/Modal";
 import SearchableSelect from "../components/SearchableSelect";
 import { useForm, Controller } from "react-hook-form";
-import { OutboundShipment, Inventory, Billing } from "../types";
+import { OutboundShipment, Inventory, Billing, BillingStatus } from "../types";
 import { useInventoryStore, useAlertStore } from "../store";
 import { useAuthStore } from "../store/auth";
 import { useBillingStore } from "../store/billing";
@@ -79,8 +79,8 @@ function OutboundShipments() {
     deleteOutbound,
     bulkUploadOutbound,
   } = useInventoryStore();
-  const { updateShippingFee } = useBillingStore();
-  const { addBilling } = useBillingStore.getState();
+  const { updateShippingFee, addBilling, bulkUploadBillings } =
+    useBillingStore();
   const { setAlert } = useAlertStore();
   const { user } = useAuthStore();
   const isVendor = user?.role === "vendor";
@@ -200,6 +200,8 @@ function OutboundShipments() {
       // Update the existing shipment in the store
       updateOutbound(updatedShipment);
 
+      await fetchOutbound(); // Refresh the outbound shipments
+
       // Check if the shipping fee has changed
       if (editingShipment.shipping_fee !== data.shipping_fee) {
         await updateShippingFee(data.order_id, data.shipping_fee || 0); // Update the shipping fee in Billings
@@ -222,6 +224,7 @@ function OutboundShipments() {
       // Add the new shipment to the store
       try {
         await addOutbound(shipment);
+        await fetchOutbound(); // Refresh the outbound shipments
         setAlert("Outbound Shipment created successfully", "success");
         setEditingShipment(null);
       } catch (error) {
@@ -276,10 +279,41 @@ function OutboundShipments() {
 
   const handleBulkImport = async (newShipments: OutboundShipment[]) => {
     try {
+      // Bulk upload outbound shipments
       await bulkUploadOutbound(newShipments);
       console.log("Bulk uploaded shipments:", newShipments);
 
-      setAlert(`Successfully sent ${newShipments.length} requests`, "success");
+      // Filter shipments with tracking numbers
+      const shipmentsWithTracking = newShipments.filter(
+        (shipment) => shipment.tracking_number
+      );
+
+      if (shipmentsWithTracking.length > 0) {
+        // Map shipments to billing format
+        const billings = shipmentsWithTracking.map((shipment) => ({
+          order_id: shipment.order_id,
+          vendor_number: shipment.vendor_number,
+          shipping_fee: shipment.shipping_fee || 0,
+          billing_date: new Date(), // Use a Date object
+          notes: shipment.note || "",
+          status: "Pending" as BillingStatus, // Explicitly cast to BillingStatus
+          paid_on: null,
+        }));
+
+        // Bulk upload billings
+        await bulkUploadBillings(billings);
+        console.log(
+          "Billings created for shipments with tracking numbers:",
+          billings
+        );
+      }
+
+      await fetchOutbound(); // Refresh the outbound shipments
+
+      setAlert(
+        `Successfully uploaded ${newShipments.length} shipments. ${shipmentsWithTracking.length} added to billings.`,
+        "success"
+      );
       setIsBulkImportModalOpen(false);
     } catch (error) {
       console.error("Bulk upload failed:", error);
