@@ -1,65 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Package, TrendingDown, TrendingUp, AlertTriangle } from "lucide-react";
-import { useInventoryStore } from "../../store";
 import { DashboardCard } from "./DashboardCard";
 
 function AdminDashboard() {
-  const { products = [], transactions = [] } = useInventoryStore();
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [lowStockItems, setLowStockItems] = useState(0);
+  const [inboundCount, setInboundCount] = useState(0);
+  const [outboundCount, setOutboundCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Ensure products and transactions are defined
-  if (!products || !transactions) {
+  // Fetch data from the backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch total products
+        const productsResponse = await fetch("http://192.168.100.12:5000/api/inventory");
+        const products = await productsResponse.json();
+        setTotalProducts(products.length);
+
+        // Calculate low stock items
+        const lowStock = products.filter((p: any) => p.stock_check <= p.min_stock_level);
+        setLowStockItems(lowStock.length);
+
+        // Fetch inbound shipments
+        const inboundResponse = await fetch("http://192.168.100.12:5000/api/inbound-shipments");
+        const inboundShipments = await inboundResponse.json();
+        setInboundCount(inboundShipments.length);
+
+        // Fetch outbound shipments
+        const outboundResponse = await fetch("http://192.168.100.12:5000/api/outbound-shipments");
+        const outboundShipments = await outboundResponse.json();
+        setOutboundCount(outboundShipments.length);
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
     return <div>Loading...</div>;
   }
-
-  const totalProducts = products.length;
-  const lowStockItems = products.filter((p) => p.quantity <= p.minStockLevel);
-
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  // Filter completed transactions from the last 30 days
-  const recentTransactions = transactions.filter(
-    (t) => new Date(t.createdAt) >= thirtyDaysAgo && t.status === "completed"
-  );
-
-  // Group inbound and outbound transactions
-  const inboundCount = recentTransactions.filter(
-    (t) => t.type === "inbound"
-  ).length;
-  const outboundCount = recentTransactions.filter(
-    (t) => t.type === "outbound"
-  ).length;
-
-  // Helper function to calculate trends
-  const calculateTrend = (type: "inbound" | "outbound") => {
-    const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
-    const recent = recentTransactions.filter(
-      (t) =>
-        t.type === type &&
-        t.status === "completed" &&
-        new Date(t.createdAt) >= fifteenDaysAgo
-    ).length;
-
-    const previous = recentTransactions.filter(
-      (t) =>
-        t.type === type &&
-        t.status === "completed" &&
-        new Date(t.createdAt) >= thirtyDaysAgo &&
-        new Date(t.createdAt) < fifteenDaysAgo
-    ).length;
-
-    if (previous === 0) return { trend: "neutral", value: "No previous data" };
-    const change = ((recent - previous) / previous) * 100;
-    return {
-      trend: change > 0 ? "up" : change < 0 ? "down" : "neutral",
-      value: `${Math.abs(change).toFixed(1)}% from last period`,
-    };
-  };
-
-  const inboundTrend = calculateTrend("inbound");
-  const outboundTrend = calculateTrend("outbound");
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,23 +59,23 @@ function AdminDashboard() {
         title="Inbound Orders"
         value={inboundCount}
         icon={TrendingUp}
-        trend={inboundTrend.trend}
-        trendValue={inboundTrend.value}
+        trend="neutral"
+        trendValue="Inbound shipments count"
       />
       <DashboardCard
         title="Outbound Orders"
         value={outboundCount}
         icon={TrendingDown}
-        trend={outboundTrend.trend}
-        trendValue={outboundTrend.value}
+        trend="neutral"
+        trendValue="Outbound shipments count"
       />
       <DashboardCard
         title="Low Stock Items"
-        value={lowStockItems.length}
+        value={lowStockItems}
         icon={AlertTriangle}
-        trend={lowStockItems.length > 0 ? "down" : "neutral"}
+        trend={lowStockItems > 0 ? "down" : "neutral"}
         trendValue={
-          lowStockItems.length > 0
+          lowStockItems > 0
             ? "Requires attention"
             : "Stock levels healthy"
         }
