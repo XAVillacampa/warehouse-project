@@ -11,6 +11,7 @@ import {
   Legend,
   Bar,
 } from "recharts";
+import { useInventoryStore } from "../../store";
 
 function AdminDashboard() {
   const { inventory, inbound, outbound } = useInventoryStore();
@@ -115,11 +116,13 @@ function AdminDashboard() {
       />
       <DashboardCard
         title="Low Stock Items"
-        value={lowStockItems}
+        value={lowStockItems.length}
         icon={AlertTriangle}
-        trend={lowStockItems > 0 ? "down" : "neutral"}
+        trend={lowStockItems.length > 0 ? "down" : "neutral"}
         trendValue={
-          lowStockItems > 0 ? "Requires attention" : "Stock levels healthy"
+          lowStockItems.length > 0
+            ? "Requires attention"
+            : "Stock levels healthy"
         }
       />
 
