@@ -245,7 +245,7 @@ app.delete("/api/inventory/:sku", async (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
 
-    await db.execute("DELETE FROM inventory WHERE sku = ?", [sku]);
+    await db.execute("DELETE FROM Inventory WHERE sku = ?", [sku]);
     res.json({ message: "Product deleted successfully" });
   } catch (err) {
     console.error("Error deleting product:", err);
