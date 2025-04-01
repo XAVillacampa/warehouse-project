@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Package, TrendingDown, TrendingUp, AlertTriangle } from "lucide-react";
-import { useInventoryStore } from "../../store";
 import { DashboardCard } from "./DashboardCard";
 import {
   ResponsiveContainer,
@@ -104,25 +103,23 @@ function AdminDashboard() {
         title="Inbound Orders"
         value={inboundCount}
         icon={TrendingUp}
-        trend={inboundTrend.trend}
-        trendValue={inboundTrend.value}
+        trend="neutral"
+        trendValue="Inbound shipments count"
       />
       <DashboardCard
         title="Outbound Orders"
         value={outboundCount}
         icon={TrendingDown}
-        trend={outboundTrend.trend}
-        trendValue={outboundTrend.value}
+        trend="neutral"
+        trendValue="Outbound shipments count"
       />
       <DashboardCard
         title="Low Stock Items"
-        value={lowStockItems.length}
+        value={lowStockItems}
         icon={AlertTriangle}
-        trend={lowStockItems.length > 0 ? "down" : "neutral"}
+        trend={lowStockItems > 0 ? "down" : "neutral"}
         trendValue={
-          lowStockItems.length > 0
-            ? "Requires attention"
-            : "Stock levels healthy"
+          lowStockItems > 0 ? "Requires attention" : "Stock levels healthy"
         }
       />
 
