@@ -122,7 +122,7 @@ function Claims() {
           data
         );
         console.log("Response from server (update):", response.data); // Debugging log
-  
+
         // Update the claims state with the updated claim
         setClaims((prev) =>
           prev.map((claim) =>
@@ -134,12 +134,12 @@ function Claims() {
         // Create new claim
         const response = await axios.post("http://localhost:5000/api/claims", data);
         console.log("Response from server (create):", response.data); // Debugging log
-  
+
         // Add the new claim to the claims state
         setClaims((prev) => [...prev, response.data]);
         setAlert("Claim created successfully", "success");
       }
-  
+
       closeModal();
     } catch (error) {
       console.error("Error saving claim:", error);
@@ -233,7 +233,7 @@ function Claims() {
   const handleDeleteClaim = async (claimId: string) => {
     if (window.confirm("Are you sure you want to delete this claim?")) {
       try {
-        await axios.delete(`/api/claims/${claimId}`);
+        await axios.delete(`http://localhost:5000/api/claims/${claimId}`);
         setClaims((prev) => prev.filter((claim) => claim.id !== claimId));
         setAlert("Claim deleted successfully", "success");
       } catch (error) {
