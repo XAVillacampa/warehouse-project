@@ -453,34 +453,38 @@ function Claims() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Order ID
             </label>
-            <select
-              {...register("order_id", { required: true })}
-              onChange={(e) => {
-                const selectedOrderId = e.target.value;
-                setValue("order_id", selectedOrderId);
-                const selectedOrder = orders.find(
-                  (order) => order.order_id === selectedOrderId
-                );
-                if (selectedOrder) {
-                  setValue("sku", selectedOrder.sku);
-                  setValue("customer_name", selectedOrder.customer_name || "");
-                  setValue("item_quantity", selectedOrder.item_quantity || 0);
-                  setValue("tracking_number", selectedOrder.tracking_number || "");
-                }
-              }}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            >
-              <option value="">Select an Order ID</option>
-              {Array.isArray(orders) && orders.length > 0 ? (
-                orders.map((order) => (
-                  <option key={order.order_id} value={order.order_id}>
-                    {order.order_id}
-                  </option>
-                ))
-              ) : (
-                <option disabled>No orders available</option>
+            <Controller
+              name="order_id"
+              control={control}
+              rules={{ required: "Please select an Order ID" }}
+              render={({ field, fieldState }) => (
+                <>
+                  <SearchableSelect
+                    options={orders.map((order) => ({
+                      value: order.order_id,
+                      label: `[${order.order_id}] ${order.customer_name}`,
+                      description: `SKU: ${order.sku} | Quantity: ${order.item_quantity} | Tracking: ${order.tracking_number}`,
+                    }))}
+                    value={field.value}
+                    onChange={(value) => {
+                      field.onChange(value); // Update the selected Order ID
+                      const selectedOrder = orders.find((order) => order.order_id === value);
+                      if (selectedOrder) {
+                        setValue("sku", selectedOrder.sku);
+                        setValue("customer_name", selectedOrder.customer_name || "");
+                        setValue("item_quantity", selectedOrder.item_quantity || 0);
+                        setValue("tracking_number", selectedOrder.tracking_number || "");
+                      }
+                    }}
+                    placeholder="Search and select an Order ID..."
+                    className="mt-1"
+                  />
+                  {fieldState.error && (
+                    <p className="text-red-500">{fieldState.error.message}</p>
+                  )}
+                </>
               )}
-            </select>
+            />
           </div>
 
           {/* Customer Name Field */}
