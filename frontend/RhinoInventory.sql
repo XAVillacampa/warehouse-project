@@ -1,9 +1,7 @@
--- Active: 1743391294931@@wms-db-cluster-instance-1.ctmecumowr62.ap-southeast-1.rds.amazonaws.com@3306@ItemsDB
+-- Active: 1743145468783@@wms-db-cluster-instance-1.ctmecumowr62.ap-southeast-1.rds.amazonaws.com@3306@ItemsDB
 CREATE DATABASE `ItemsDB`;
 
-USE ItemsDB;
-
-SHOW TABLES;
+USE `ItemsDB`;
 
 drop database `ItemsDB`;
 
@@ -209,39 +207,41 @@ VALUES
     'V001'
   );
 
-CREATE TABLE
-  Claims (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id VARCHAR(20) NOT NULL,
-    order_date DATE NOT NULL,
-    sku VARCHAR(100) NOT NULL,
-    item_quantity INT NOT NULL DEFAULT 1,
-    warehouse_code VARCHAR(10) NOT NULL,
-    stock_check INT DEFAULT 0,
-    customer_name VARCHAR(255) NOT NULL,
-    country VARCHAR(50) NOT NULL,
-    address1 VARCHAR(255) NOT NULL,
-    address2 VARCHAR(255),
-    zip_code VARCHAR(20) NOT NULL,
-    city VARCHAR(100) NOT NULL,
-    state VARCHAR(50) NOT NULL,
-    tracking_number VARCHAR(50) NOT NULL,
-    shipping_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    status ENUM ('Solved', 'Denied', 'New', 'Claimed') NOT NULL,
-    reason TEXT NULL,
-    -- Can be left blank if not applicable
-    response_action TEXT,
-    invoice_link TEXT,
-    note TEXT,
-    vendor_number VARCHAR(45),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id) ON DELETE CASCADE,
-    FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE
-  );
+CREATE TABLE Claims (
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for the claim
+    order_id VARCHAR(20) NOT NULL, -- Reference to the order
+    order_date DATE NOT NULL, -- Date of the order
+    sku VARCHAR(100) NOT NULL, -- Product SKU
+    item_quantity INT NOT NULL DEFAULT 1, -- Quantity of items in the claim
+    warehouse_code VARCHAR(10) NOT NULL, -- Warehouse code
+    customer_name VARCHAR(255) NOT NULL, -- Customer name
+    tracking_number VARCHAR(50) NOT NULL, -- Tracking number
+    shipping_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- Shipping fee
+    status ENUM ('Solved', 'Denied', 'New', 'Claimed') NOT NULL, -- Claim status
+    reason TEXT NULL, -- Reason for the claim
+    response_action TEXT NULL, -- Response action for the claim
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the claim was created
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Timestamp when the claim was last updated
+    FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id) ON DELETE CASCADE, -- Link to Outbound_Shipments
+    FOREIGN KEY (sku) REFERENCES Inventory (sku) ON DELETE CASCADE -- Link to Inventory
+);
 
 -- Run this if you want to add a unique constraint to the tracking column
 ALTER TABLE Claims MODIFY COLUMN reason TEXT NULL;
+
+SELECT 
+  Claims.id,
+  Claims.order_id,
+  Claims.sku,
+  Claims.item_quantity,
+  Claims.status,
+  Claims.reason,
+  Claims.created_at,
+  Outbound_Shipments.customer_name,
+  Outbound_Shipments.order_date
+FROM Claims
+INNER JOIN Outbound_Shipments
+ON Claims.order_id = Outbound_Shipments.order_id;
 
 select
   *
