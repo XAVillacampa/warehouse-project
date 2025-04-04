@@ -1306,14 +1306,18 @@ app.get("/api/claims", async (req, res) => {
       SELECT 
         Claims.id,
         Claims.order_id,
+        Outbound_Shipments.order_date,
         Claims.sku,
         Claims.item_quantity,
+        Outbound_Shipments.customer_name,
+        Outbound_Shipments.tracking_number,
+        Outbound_Shipments.warehouse_code,
+        Outbound_Shipments.shipping_fee,
         Claims.status,
         Claims.reason,
-        Claims.tracking_number,
+        Claims.response_action,
         Claims.created_at,
-        Outbound_Shipments.customer_name,
-        Outbound_Shipments.order_date
+        Claims.updated_at
       FROM Claims
       INNER JOIN Outbound_Shipments
       ON Claims.order_id = Outbound_Shipments.order_id
@@ -1326,19 +1330,85 @@ app.get("/api/claims", async (req, res) => {
   }
 });
 
-app.put("/api/claims/:id", async (req, res) => {
-  const { id } = req.params;
-  const { status, reason } = req.body;
+// Create a new claim
+app.post("/api/claims", async (req, res) => {
+  const { order_id, sku, item_quantity, status, reason, response_action } = req.body;
 
   try {
-    await db.execute(
-      "UPDATE Claims SET status = ?, reason = ? WHERE id = ?",
-      [status, reason, id]
+    // Ensure the order_id exists in the Outbound_Shipments table
+    const [outbound] = await db.execute(
+      "SELECT order_id FROM Outbound_Shipments WHERE order_id = ?",
+      [order_id]
     );
+
+    if (outbound.length === 0) {
+      return res.status(404).json({ error: "Order ID not found in Outbound Shipments" });
+    }
+
+    // Insert the new claim
+    await db.execute(
+      `INSERT INTO Claims (order_id, sku, item_quantity, status, reason, response_action, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [order_id, sku, item_quantity, status, reason, response_action]
+    );
+
+    res.status(201).json({ message: "Claim created successfully" });
+  } catch (err) {
+    console.error("Error creating claim:", err);
+    res.status(500).json({ error: "Failed to create claim" });
+  }
+});
+
+// Update a claim
+app.put("/api/claims/:id", async (req, res) => {
+  const { id } = req.params;
+  const { reason, status, response_action } = req.body;
+
+  try {
+    const [result] = await db.execute(
+      "UPDATE Claims SET reason = ?, status = ?, response_action = ?, updated_at = NOW() WHERE id = ?",
+      [reason, status, response_action, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Claim not found" });
+    }
+
     res.json({ message: "Claim updated successfully" });
   } catch (err) {
     console.error("Error updating claim:", err);
     res.status(500).json({ error: "Failed to update claim" });
+  }
+});
+
+// Delete a claim
+app.delete("/api/claims/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await db.execute("DELETE FROM Claims WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Claim not found" });
+    }
+
+    res.json({ message: "Claim deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting claim:", err);
+    res.status(500).json({ error: "Failed to delete claim" });
+  }
+});
+
+//for outbound shipment list in new claims
+app.get("/api/outbound-shipments-for-claims", async (req, res) => {
+  try {
+    const [orders] = await db.execute(`
+      SELECT order_id, sku FROM Outbound_Shipments
+    `);
+    res.json(orders);
+  } catch (err) {
+    console.error("Error fetching outbound shipments:", err);
+    res.status(500).json({ error: "Failed to fetch outbound shipments" });
   }
 });
 

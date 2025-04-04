@@ -15,6 +15,7 @@ import { useForm, Controller } from "react-hook-form";
 import { useAlertStore } from "../store";
 import axios from "axios";
 
+
 interface Claim {
   id: string;
   order_id: string;
@@ -27,6 +28,11 @@ interface Claim {
   created_at: string;
 }
 
+interface OutboundShipment {
+  order_id: string;
+  sku: string;
+}
+
 interface ClaimFormData {
   order_id: string;
   sku: string;
@@ -37,6 +43,7 @@ interface ClaimFormData {
 
 function Claims() {
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [orders, setOrders] = useState<OutboundShipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
@@ -46,14 +53,13 @@ function Claims() {
   const menuRef = useRef(null);
 
   const { setAlert } = useAlertStore();
-  const { register, handleSubmit, reset, control } = useForm<ClaimFormData>();
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm<ClaimFormData>();
 
   // Fetch claims data from the backend
   useEffect(() => {
     const fetchClaims = async () => {
       try {
         const response = await axios.get("/api/claims");
-        console.log("Fetched claims data:", response.data); // Debugging log
         setClaims(response.data);
       } catch (error) {
         console.error("Error fetching claims:", error);
@@ -62,9 +68,91 @@ function Claims() {
         setIsLoading(false);
       }
     };
-  
+
     fetchClaims();
   }, [setAlert]);
+
+  // Fetch orders data for the dropdown
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/outbound-shipments-for-claims");
+        if (Array.isArray(response.data)) {
+          setOrders(response.data);
+        } else {
+          setOrders([]);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        setAlert("Failed to fetch orders", "error");
+        setOrders([]);
+      }
+    };
+
+    fetchOrders();
+  }, [setAlert]);
+
+  // Automatically update SKU when Order ID changes
+  const selectedOrderId = watch("order_id");
+  useEffect(() => {
+    const selectedOrder = orders.find((order) => order.order_id === selectedOrderId);
+    if (selectedOrder) {
+      setValue("sku", selectedOrder.sku);
+    }
+  }, [selectedOrderId, orders, setValue]);
+
+  // Handle form submission for creating or editing claims
+  const onSubmit = async (data: ClaimFormData) => {
+    try {
+      console.log("Submitting claim data:", data); // Debugging log
+      if (editingClaim) {
+        const updatedClaim = { ...editingClaim, ...data };
+        await axios.put(`/api/claims/${editingClaim.id}`, updatedClaim);
+        setClaims((prev) =>
+          prev.map((claim) =>
+            claim.id === editingClaim.id ? updatedClaim : claim
+          )
+        );
+        setAlert("Claim updated successfully", "success");
+      } else {
+        const response = await axios.post("/api/claims", data);
+        setClaims((prev) => [...prev, response.data]);
+        setAlert("Claim created successfully", "success");
+      }
+      closeModal();
+    } catch (error) {
+      console.error("Error saving claim:", error);
+      setAlert("Failed to save claim", "error");
+    }
+  };
+
+  // Open modal for creating or editing a claim
+  const openEditModal = (claim?: Claim) => {
+    setEditingClaim(claim || null);
+    setIsModalOpen(true);
+    reset(
+      claim
+        ? {
+          order_id: claim.order_id,
+          sku: claim.sku,
+          status: claim.status,
+          reason: claim.reason,
+        }
+        : {
+          order_id: "",
+          sku: "",
+          status: "New",
+          reason: "",
+        }
+    );
+  };
+
+  // Close modal and reset form
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingClaim(null);
+    reset();
+  };
 
   // Close action menu on outside click or Escape key
   useEffect(() => {
@@ -97,7 +185,7 @@ function Claims() {
         if (selectedStatus !== "all" && claim.status !== selectedStatus) {
           return false;
         }
-  
+
         const searchString = `${claim.order_id} ${claim.sku} ${claim.customer_name}`.toLowerCase();
         return searchString.includes(searchTerm.toLowerCase());
       })
@@ -106,52 +194,6 @@ function Claims() {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
   }, [claims, searchTerm, selectedStatus]);
-
-  // Handle form submission for creating or editing claims
-  const onSubmit = async (data: ClaimFormData) => {
-    try {
-      if (editingClaim) {
-        // Update existing claim
-        const updatedClaim = { ...editingClaim, ...data };
-        await axios.put(`/api/claims/${editingClaim.id}`, updatedClaim);
-        setClaims((prev) =>
-          prev.map((claim) =>
-            claim.id === editingClaim.id ? updatedClaim : claim
-          )
-        );
-        setAlert("Claim updated successfully", "success");
-      } else {
-        // Create new claim
-        const response = await axios.post("/api/claims", data);
-        setClaims((prev) => [...prev, response.data]);
-        setAlert("Claim created successfully", "success");
-      }
-      closeModal();
-    } catch (error) {
-      console.error("Error saving claim:", error);
-      setAlert("Failed to save claim", "error");
-    }
-  };
-
-  // Open modal for editing a claim
-  const openEditModal = (claim: Claim) => {
-    setEditingClaim(claim);
-    setIsModalOpen(true);
-    reset({
-      order_id: claim.order_id,
-      sku: claim.sku,
-      item_quantity: claim.item_quantity,
-      status: claim.status,
-      reason: claim.reason,
-    });
-  };
-
-  // Close modal and reset form
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingClaim(null);
-    reset();
-  };
 
   // Handle deleting a claim
   const handleDeleteClaim = async (claimId: string) => {
@@ -167,8 +209,41 @@ function Claims() {
     }
   };
 
+  // Skeleton loader for table rows
+  const renderSkeletonRows = () => {
+    return Array.from({ length: 5 }).map((_, index) => (
+      <tr key={index} className="animate-pulse">
+        <td className="px-6 py-4">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+        <td className="px-6 py-4 text-right">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+        </td>
+      </tr>
+    ));
+  };
+
   if (isLoading) {
-    return <div>Loading claims...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
@@ -299,16 +374,39 @@ function Claims() {
         title={editingClaim ? "Edit Claim" : "New Claim"}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Order ID Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Order ID
             </label>
-            <input
-              type="text"
+            <select
               {...register("order_id", { required: true })}
+              onChange={(e) => {
+                const selectedOrderId = e.target.value;
+                setValue("order_id", selectedOrderId);
+                const selectedOrder = orders.find(
+                  (order) => order.order_id === selectedOrderId
+                );
+                if (selectedOrder) {
+                  setValue("sku", selectedOrder.sku);
+                }
+              }}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            />
+            >
+              <option value="">Select an Order ID</option>
+              {Array.isArray(orders) && orders.length > 0 ? (
+                orders.map((order) => (
+                  <option key={order.order_id} value={order.order_id}>
+                    {order.order_id}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No orders available</option>
+              )}
+            </select>
           </div>
+
+          {/* SKU Field (Read-Only) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               SKU
@@ -316,19 +414,12 @@ function Claims() {
             <input
               type="text"
               {...register("sku", { required: true })}
+              readOnly
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Quantity
-            </label>
-            <input
-              type="number"
-              {...register("item_quantity", { required: true, min: 1 })}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            />
-          </div>
+
+          {/* Status Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Status
@@ -343,6 +434,8 @@ function Claims() {
               <option value="Denied">Denied</option>
             </select>
           </div>
+
+          {/* Reason Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Reason
@@ -353,6 +446,8 @@ function Claims() {
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />
           </div>
+
+          {/* Modal Actions */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
