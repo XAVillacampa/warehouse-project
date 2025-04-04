@@ -115,11 +115,31 @@ function Claims() {
   // Handle form submission for creating or editing claims
   const onSubmit = async (data: ClaimFormData) => {
     try {
-      console.log("Submitting claim data:", data); // Debugging log
-      const response = await axios.post("http://localhost:5000/api/claims", data);
-      console.log("Response from server:", response.data); // Debugging log
-      setClaims((prev) => [...prev, response.data]);
-      setAlert("Claim created successfully", "success");
+      if (editingClaim) {
+        // Update existing claim
+        const response = await axios.put(
+          `http://localhost:5000/api/claims/${editingClaim.id}`,
+          data
+        );
+        console.log("Response from server (update):", response.data); // Debugging log
+  
+        // Update the claims state with the updated claim
+        setClaims((prev) =>
+          prev.map((claim) =>
+            claim.id === editingClaim.id ? { ...claim, ...data } : claim
+          )
+        );
+        setAlert("Claim updated successfully", "success");
+      } else {
+        // Create new claim
+        const response = await axios.post("http://localhost:5000/api/claims", data);
+        console.log("Response from server (create):", response.data); // Debugging log
+  
+        // Add the new claim to the claims state
+        setClaims((prev) => [...prev, response.data]);
+        setAlert("Claim created successfully", "success");
+      }
+  
       closeModal();
     } catch (error) {
       console.error("Error saving claim:", error);
