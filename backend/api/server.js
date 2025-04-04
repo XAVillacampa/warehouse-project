@@ -1313,7 +1313,7 @@ app.get("/api/claims", async (req, res) => {
         Claims.tracking_number,
         Claims.created_at,
         Outbound_Shipments.customer_name,
-        Outbound_Shipments.shipping_date
+        Outbound_Shipments.order_date
       FROM Claims
       INNER JOIN Outbound_Shipments
       ON Claims.order_id = Outbound_Shipments.order_id
