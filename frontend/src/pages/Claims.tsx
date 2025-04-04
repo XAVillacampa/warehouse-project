@@ -25,20 +25,28 @@ interface Claim {
   status: string;
   reason: string;
   tracking_number: string;
+  response_action: string;
   created_at: string;
 }
 
 interface OutboundShipment {
   order_id: string;
   sku: string;
+  customer_name: string;
+  item_quantity: number;
+  tracking_number: string;
 }
 
 interface ClaimFormData {
   order_id: string;
+  customer_name: string;
   sku: string;
   item_quantity: number;
   status: string;
-  reason?: string;
+  reason: string;
+  tracking_number: string;
+  response_action: string;
+  created_at: string;
 }
 
 function Claims() {
@@ -59,7 +67,7 @@ function Claims() {
   useEffect(() => {
     const fetchClaims = async () => {
       try {
-        const response = await axios.get("/api/claims");
+        const response = await axios.get("http://localhost:5000/api/claims");
         setClaims(response.data);
       } catch (error) {
         console.error("Error fetching claims:", error);
@@ -97,7 +105,10 @@ function Claims() {
   useEffect(() => {
     const selectedOrder = orders.find((order) => order.order_id === selectedOrderId);
     if (selectedOrder) {
-      setValue("sku", selectedOrder.sku);
+      setValue("sku", selectedOrder.sku); // Automatically set SKU
+      setValue("customer_name", selectedOrder.customer_name || ""); // Automatically set Customer Name
+      setValue("item_quantity", selectedOrder.item_quantity || 0); // Automatically set Quantity
+      setValue("tracking_number", selectedOrder.tracking_number || ""); // Automatically set Tracking Number
     }
   }, [selectedOrderId, orders, setValue]);
 
@@ -105,23 +116,14 @@ function Claims() {
   const onSubmit = async (data: ClaimFormData) => {
     try {
       console.log("Submitting claim data:", data); // Debugging log
-      if (editingClaim) {
-        const updatedClaim = { ...editingClaim, ...data };
-        await axios.put(`/api/claims/${editingClaim.id}`, updatedClaim);
-        setClaims((prev) =>
-          prev.map((claim) =>
-            claim.id === editingClaim.id ? updatedClaim : claim
-          )
-        );
-        setAlert("Claim updated successfully", "success");
-      } else {
-        const response = await axios.post("/api/claims", data);
-        setClaims((prev) => [...prev, response.data]);
-        setAlert("Claim created successfully", "success");
-      }
+      const response = await axios.post("http://localhost:5000/api/claims", data);
+      console.log("Response from server:", response.data); // Debugging log
+      setClaims((prev) => [...prev, response.data]);
+      setAlert("Claim created successfully", "success");
       closeModal();
     } catch (error) {
       console.error("Error saving claim:", error);
+      console.error("Error details:", error.response?.data || error.message); // Debugging log
       setAlert("Failed to save claim", "error");
     }
   };
@@ -134,15 +136,25 @@ function Claims() {
       claim
         ? {
           order_id: claim.order_id,
+          customer_name: claim.customer_name,
           sku: claim.sku,
+          item_quantity: claim.item_quantity,
           status: claim.status,
           reason: claim.reason,
+          tracking_number: claim.tracking_number,
+          response_action: claim.response_action,
+          created_at: claim.created_at,
         }
         : {
           order_id: "",
+          customer_name: "",
           sku: "",
+          item_quantity: 0,
           status: "New",
           reason: "",
+          tracking_number: "",
+          response_action: "",
+          created_at: "",
         }
     );
   };
@@ -180,7 +192,7 @@ function Claims() {
   // Filter claims based on search term and status
   const filteredClaims = useMemo(() => {
     const claimsArray = Array.isArray(claims) ? claims : []; // Ensure claims is an array
-    return claimsArray
+    const filtered = claimsArray
       .filter((claim) => {
         if (selectedStatus !== "all" && claim.status !== selectedStatus) {
           return false;
@@ -193,6 +205,8 @@ function Claims() {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
+    console.log("Filtered claims:", filtered); // Debugging log
+    return filtered;
   }, [claims, searchTerm, selectedStatus]);
 
   // Handle deleting a claim
@@ -309,6 +323,9 @@ function Claims() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Reason
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Tracking Number
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
@@ -345,19 +362,56 @@ function Claims() {
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {claim.reason || "N/A"}
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {claim.tracking_number || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm font-medium relative">
                         <button
-                          onClick={() => openEditModal(claim)}
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          onClick={() =>
+                            setOpenActionMenu(openActionMenu === claim.id ? null : claim.id)
+                          }
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                         >
-                          <Edit className="h-5 w-5" />
+                          <MoreVertical className="h-5 w-5" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteClaim(claim.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 ml-4"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
+
+                        {/* Action menu */}
+                        {openActionMenu === claim.id && (
+                          <div
+                            ref={menuRef}
+                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
+                          >
+                            <ul
+                              className="py-1"
+                              role="menu"
+                              aria-orientation="vertical"
+                            >
+                              {/* Edit Action */}
+                              <li
+                                onClick={() => {
+                                  openEditModal(claim);
+                                  setOpenActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </li>
+
+                              {/* Delete Action */}
+                              <li
+                                onClick={() => {
+                                  handleDeleteClaim(claim.id);
+                                  setOpenActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </li>
+                            </ul>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -389,6 +443,9 @@ function Claims() {
                 );
                 if (selectedOrder) {
                   setValue("sku", selectedOrder.sku);
+                  setValue("customer_name", selectedOrder.customer_name || "");
+                  setValue("item_quantity", selectedOrder.item_quantity || 0);
+                  setValue("tracking_number", selectedOrder.tracking_number || "");
                 }
               }}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
@@ -406,6 +463,19 @@ function Claims() {
             </select>
           </div>
 
+          {/* Customer Name Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Customer Name
+            </label>
+            <input
+              type="text"
+              {...register("customer_name", { required: true })}
+              readOnly
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+          </div>
+
           {/* SKU Field (Read-Only) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -415,7 +485,33 @@ function Claims() {
               type="text"
               {...register("sku", { required: true })}
               readOnly
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+          </div>
+
+          {/* Quantity Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Quantity
+            </label>
+            <input
+              type="number"
+              {...register("item_quantity", { required: true })}
+              readOnly
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+          </div>
+
+          {/* Tracking Number Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tracking Number
+            </label>
+            <input
+              type="text"
+              {...register("tracking_number", { required: true })}
+              readOnly
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
 
@@ -442,6 +538,18 @@ function Claims() {
             </label>
             <textarea
               {...register("reason")}
+              rows={3}
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+            />
+          </div>
+
+          {/* Response Action Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Response Action
+            </label>
+            <textarea
+              {...register("response_action")}
               rows={3}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
             />

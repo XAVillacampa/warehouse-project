@@ -1332,24 +1332,33 @@ app.get("/api/claims", async (req, res) => {
 
 // Create a new claim
 app.post("/api/claims", async (req, res) => {
-  const { order_id, sku, item_quantity, status, reason, response_action } = req.body;
+  const {
+    order_id,
+    customer_name,
+    sku,
+    item_quantity,
+    status,
+    reason,
+    tracking_number,
+    response_action,
+  } = req.body;
+
+  console.log("Incoming request data:", req.body); // Debugging log
 
   try {
-    // Ensure the order_id exists in the Outbound_Shipments table
-    const [outbound] = await db.execute(
-      "SELECT order_id FROM Outbound_Shipments WHERE order_id = ?",
-      [order_id]
-    );
-
-    if (outbound.length === 0) {
-      return res.status(404).json({ error: "Order ID not found in Outbound Shipments" });
-    }
-
-    // Insert the new claim
     await db.execute(
-      `INSERT INTO Claims (order_id, sku, item_quantity, status, reason, response_action, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [order_id, sku, item_quantity, status, reason, response_action]
+      `INSERT INTO Claims (order_id, customer_name, sku, item_quantity, status, reason, tracking_number, response_action, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        order_id,
+        customer_name,
+        sku,
+        item_quantity,
+        status,
+        reason,
+        tracking_number,
+        response_action,
+      ]
     );
 
     res.status(201).json({ message: "Claim created successfully" });
@@ -1399,11 +1408,16 @@ app.delete("/api/claims/:id", async (req, res) => {
   }
 });
 
-//for outbound shipment list in new claims
 app.get("/api/outbound-shipments-for-claims", async (req, res) => {
   try {
     const [orders] = await db.execute(`
-      SELECT order_id, sku FROM Outbound_Shipments
+      SELECT 
+        order_id, 
+        sku, 
+        customer_name, 
+        item_quantity, 
+        tracking_number 
+      FROM Outbound_Shipments
     `);
     res.json(orders);
   } catch (err) {
