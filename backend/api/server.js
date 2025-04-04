@@ -1304,24 +1304,41 @@ app.get("/api/claims", async (req, res) => {
   try {
     const [claims] = await db.execute(`
       SELECT 
-        Claims.*,
+        Claims.id,
+        Claims.order_id,
+        Claims.sku,
+        Claims.item_quantity,
+        Claims.status,
+        Claims.reason,
+        Claims.tracking_number,
+        Claims.created_at,
         Outbound_Shipments.customer_name,
-        Outbound_Shipments.country,
-        Outbound_Shipments.address1,
-        Outbound_Shipments.address2,
-        Outbound_Shipments.zip_code,
-        Outbound_Shipments.city,
-        Outbound_Shipments.state,
-        Outbound_Shipments.tracking_number
-      FROM claims
+        Outbound_Shipments.shipping_date
+      FROM Claims
       INNER JOIN Outbound_Shipments
       ON Claims.order_id = Outbound_Shipments.order_id
     `);
-
-    res.status(200).json(claims);
-  } catch (error) {
-    console.error("Error fetching claims:", error);
+    console.log("Fetched claims:", claims); // Debugging log
+    res.json(claims);
+  } catch (err) {
+    console.error("Error fetching claims:", err);
     res.status(500).json({ error: "Failed to fetch claims" });
+  }
+});
+
+app.put("/api/claims/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status, reason } = req.body;
+
+  try {
+    await db.execute(
+      "UPDATE Claims SET status = ?, reason = ? WHERE id = ?",
+      [status, reason, id]
+    );
+    res.json({ message: "Claim updated successfully" });
+  } catch (err) {
+    console.error("Error updating claim:", err);
+    res.status(500).json({ error: "Failed to update claim" });
   }
 });
 

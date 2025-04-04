@@ -53,6 +53,7 @@ function Claims() {
     const fetchClaims = async () => {
       try {
         const response = await axios.get("/api/claims");
+        console.log("Fetched claims data:", response.data); // Debugging log
         setClaims(response.data);
       } catch (error) {
         console.error("Error fetching claims:", error);
@@ -61,7 +62,7 @@ function Claims() {
         setIsLoading(false);
       }
     };
-
+  
     fetchClaims();
   }, [setAlert]);
 
@@ -90,12 +91,13 @@ function Claims() {
 
   // Filter claims based on search term and status
   const filteredClaims = useMemo(() => {
-    return claims
+    const claimsArray = Array.isArray(claims) ? claims : []; // Ensure claims is an array
+    return claimsArray
       .filter((claim) => {
         if (selectedStatus !== "all" && claim.status !== selectedStatus) {
           return false;
         }
-
+  
         const searchString = `${claim.order_id} ${claim.sku} ${claim.customer_name}`.toLowerCase();
         return searchString.includes(searchTerm.toLowerCase());
       })
