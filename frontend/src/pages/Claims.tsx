@@ -533,7 +533,7 @@ function Claims() {
             </label>
             <input
               type="text"
-              {...register("tracking_number", { required: true })}
+              {...register("tracking_number")}
               readOnly
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />

@@ -1339,11 +1339,9 @@ app.post("/api/claims", async (req, res) => {
     item_quantity,
     status,
     reason,
-    tracking_number,
+    tracking_number = null, // Default to null if not provided
     response_action,
   } = req.body;
-
-  console.log("Incoming request data:", req.body); // Debugging log
 
   try {
     await db.execute(
