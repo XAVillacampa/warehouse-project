@@ -60,6 +60,10 @@ function formatDateForMySQL(date) {
   return `${year}-${month}-${day}`;
 }
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Connect to MySQL database
 // db.connect((err) => {
 //   if (err) {
