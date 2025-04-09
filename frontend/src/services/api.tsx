@@ -1,7 +1,7 @@
 import axios from "axios";
 import { InboundShipment, NewBilling, OutboundShipment } from "../types";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://warehouse-project.onrender.com/api";
 
 // Function to handle errors consistently
 const handleApiError = (error: any, message: string) => {
