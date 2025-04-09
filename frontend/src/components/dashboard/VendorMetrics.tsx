@@ -8,10 +8,16 @@ function VendorMetrics() {
   const { inventory, inbound, outbound } = useInventoryStore();
   const { user } = useAuthStore();
 
+  console.log("Logged-in User:", user);
+  console.log("Inventory:", inventory);
+  console.log("Inbound Transactions:", inbound);
+  console.log("Outbound Transactions:", outbound);
+
   // Filter inventory by vendor number
   const vendorInventory = inventory.filter(
-    (item) => item.vendor_number === user?.vendorNumber
+    (item) => item.vendor_number === user?.vendor_number
   );
+  console.log("Vendor Inventory:", vendorInventory);
 
   const totalProducts = vendorInventory.length;
   const lowStockItems = vendorInventory.filter((item) => item.stock_check <= 50);
@@ -22,49 +28,20 @@ function VendorMetrics() {
   // Filter inbound and outbound transactions for the vendor
   const vendorInbound = inbound.filter(
     (t) =>
-      t.vendor_number === user?.vendorNumber &&
+      t.vendor_number === user?.vendor_number &&
       new Date(t.created_at) >= thirtyDaysAgo
   );
+  console.log("Vendor Inbound Transactions:", vendorInbound);
+
   const vendorOutbound = outbound.filter(
     (t) =>
-      t.vendor_number === user?.vendorNumber &&
+      t.vendor_number === user?.vendor_number &&
       new Date(t.created_at) >= thirtyDaysAgo
   );
+  console.log("Vendor Outbound Transactions:", vendorOutbound);
 
   const inboundCount = vendorInbound.length;
   const outboundCount = vendorOutbound.length;
-
-  // Helper function to calculate trends
-  const calculateTrend = (transactions: any[], type: "inbound" | "outbound") => {
-    const fifteenDaysAgo = new Date();
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
-    const recent = transactions.filter(
-      (t) => new Date(t.created_at) >= fifteenDaysAgo
-    ).length;
-
-    const previous = transactions.filter(
-      (t) =>
-        new Date(t.created_at) >= thirtyDaysAgo &&
-        new Date(t.created_at) < fifteenDaysAgo
-    ).length;
-
-    if (previous === 0) {
-      return {
-        trend: recent > 0 ? "up" : "neutral",
-        value: recent > 0 ? "New activity" : "No previous data",
-      };
-    }
-
-    const change = ((recent - previous) / previous) * 100;
-    return {
-      trend: change > 0 ? "up" : change < 0 ? "down" : "neutral",
-      value: `${Math.abs(change).toFixed(1)}% from last period`,
-    };
-  };
-
-  const inboundTrend = calculateTrend(vendorInbound, "inbound");
-  const outboundTrend = calculateTrend(vendorOutbound, "outbound");
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
