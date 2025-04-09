@@ -70,12 +70,12 @@ const navigation: NavItem[] = [
     icon: DollarSign,
     roles: ["admin", "staff", "vendor"],
   },
-  {
-    name: "Reports",
-    href: "/reports",
-    icon: FileText,
-    roles: ["admin", "staff"],
-  },
+  // {
+  //   name: "Reports",
+  //   href: "/reports",
+  //   icon: FileText,
+  //   roles: ["admin", "staff"],
+  // },
 ];
 
 function Layout() {
