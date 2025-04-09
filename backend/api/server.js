@@ -10,6 +10,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+const allowedOrigins = [
+  "http://localhost:5173", // Local development
+  "https://warehouse-project-seven.vercel.app", // Deployed frontend
+];
 
 // Validate environment variables
 if (
@@ -26,7 +30,14 @@ if (
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Allow cookies and credentials
   })
 );
 
