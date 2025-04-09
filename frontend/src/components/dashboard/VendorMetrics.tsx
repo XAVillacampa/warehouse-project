@@ -79,15 +79,15 @@ function VendorMetrics() {
         title="Inbound Orders"
         value={inboundCount}
         icon={TrendingUp}
-        trend={inboundTrend.trend}
-        trendValue={inboundTrend.value}
+        trend="neutral"
+        trendValue="Inbound shipments count"
       />
       <DashboardCard
         title="Outbound Orders"
         value={outboundCount}
         icon={TrendingDown}
-        trend={outboundTrend.trend}
-        trendValue={outboundTrend.value}
+        trend="neutral"
+        trendValue="Outbound shipments count"
       />
       <DashboardCard
         title="Low Stock Items"
