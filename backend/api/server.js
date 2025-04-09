@@ -13,6 +13,7 @@ const port = process.env.PORT || 5000;
 const allowedOrigins = [
   "http://localhost:5173", // Local development
   "https://warehouse-project-seven.vercel.app", // Deployed frontend
+  "https://warehouse-project.onrender.com", // Deployed backend
 ];
 
 // Validate environment variables
@@ -34,6 +35,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.error(`CORS error: Origin ${origin} not allowed`);
         callback(new Error("Not allowed by CORS"));
       }
     },
