@@ -5,55 +5,57 @@ import { useAuthStore } from "../../store/auth";
 import { DashboardCard } from "./DashboardCard";
 
 function VendorMetrics() {
-  const { products, transactions } = useInventoryStore();
+  const { inventory, inbound, outbound } = useInventoryStore();
   const { user } = useAuthStore();
 
-  // Filter products by vendor number
-  const vendorProducts = products.filter(
-    (p) => p.vendorNumber === user?.vendorNumber
-  );
-  const totalProducts = vendorProducts.length;
-  const lowStockItems = vendorProducts.filter(
-    (p) => p.quantity <= p.minStockLevel
+  // Filter inventory by vendor number
+  const vendorInventory = inventory.filter(
+    (item) => item.vendor_number === user?.vendorNumber
   );
 
-  // Get transactions from the last 30 days for vendor's products
+  const totalProducts = vendorInventory.length;
+  const lowStockItems = vendorInventory.filter((item) => item.stock_check <= 50);
+
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const vendorTransactions = transactions.filter((t) => {
-    const product = products.find((p) => p.id === t.productId);
-    return (
-      product?.vendorNumber === user?.vendorNumber &&
-      new Date(t.createdAt) >= thirtyDaysAgo &&
-      t.status === "completed"
-    );
-  });
+  // Filter inbound and outbound transactions for the vendor
+  const vendorInbound = inbound.filter(
+    (t) =>
+      t.vendor_number === user?.vendorNumber &&
+      new Date(t.created_at) >= thirtyDaysAgo
+  );
+  const vendorOutbound = outbound.filter(
+    (t) =>
+      t.vendor_number === user?.vendorNumber &&
+      new Date(t.created_at) >= thirtyDaysAgo
+  );
 
-  const inboundCount = vendorTransactions.filter(
-    (t) => t.type === "inbound"
-  ).length;
-  const outboundCount = vendorTransactions.filter(
-    (t) => t.type === "outbound"
-  ).length;
+  const inboundCount = vendorInbound.length;
+  const outboundCount = vendorOutbound.length;
 
-  // Calculate trends
-  const calculateTrend = (type: "inbound" | "outbound") => {
+  // Helper function to calculate trends
+  const calculateTrend = (transactions: any[], type: "inbound" | "outbound") => {
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-    const recent = vendorTransactions.filter(
-      (t) => t.type === type && new Date(t.createdAt) >= fifteenDaysAgo
+    const recent = transactions.filter(
+      (t) => new Date(t.created_at) >= fifteenDaysAgo
     ).length;
 
-    const previous = vendorTransactions.filter(
+    const previous = transactions.filter(
       (t) =>
-        t.type === type &&
-        new Date(t.createdAt) >= thirtyDaysAgo &&
-        new Date(t.createdAt) < fifteenDaysAgo
+        new Date(t.created_at) >= thirtyDaysAgo &&
+        new Date(t.created_at) < fifteenDaysAgo
     ).length;
 
-    if (previous === 0) return { trend: "neutral", value: "No previous data" };
+    if (previous === 0) {
+      return {
+        trend: recent > 0 ? "up" : "neutral",
+        value: recent > 0 ? "New activity" : "No previous data",
+      };
+    }
+
     const change = ((recent - previous) / previous) * 100;
     return {
       trend: change > 0 ? "up" : change < 0 ? "down" : "neutral",
@@ -61,13 +63,13 @@ function VendorMetrics() {
     };
   };
 
-  const inboundTrend = calculateTrend("inbound");
-  const outboundTrend = calculateTrend("outbound");
+  const inboundTrend = calculateTrend(vendorInbound, "inbound");
+  const outboundTrend = calculateTrend(vendorOutbound, "outbound");
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <DashboardCard
-        title="Your Products"
+        title="Total Products"
         value={totalProducts}
         icon={Package}
         trend="neutral"

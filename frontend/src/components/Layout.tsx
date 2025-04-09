@@ -68,7 +68,7 @@ const navigation: NavItem[] = [
     name: "Billing",
     href: "/billings",
     icon: DollarSign,
-    roles: ["admin", "staff", "vendor"],
+    roles: ["admin", "staff"],
   },
   {
     name: "Reports",
