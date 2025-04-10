@@ -63,13 +63,14 @@ const navigation: NavItem[] = [
     icon: BaggageClaim,
     roles: ["admin", "staff"],
   },
-  { name: "Users", href: "/users", icon: Users, roles: ["admin"] },
   {
     name: "Billing",
     href: "/billings",
     icon: DollarSign,
     roles: ["admin", "staff"],
   },
+  { name: "Users", href: "/users", icon: Users, roles: ["admin"] },
+  
   // {
   //   name: "Reports",
   //   href: "/reports",
