@@ -1489,7 +1489,7 @@ app.put("/api/claims/:id", async (req, res) => {
       [id]
     );
 
-    console.log("Updated claim:", updatedClaim); // Debugging log
+    // console.log("Updated claim:", updatedClaim); // Debugging log
     if (updatedClaim.length === 0) {
       return res.status(404).json({ error: "Claim not found" });
     }
