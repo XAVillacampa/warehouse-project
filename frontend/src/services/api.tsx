@@ -53,6 +53,55 @@ export const deleteProductAPI = async (sku) => {
   }
 };
 
+/* ========================= News Announcement APIs ========================= */
+// Fetch all news
+export const fetchNews = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/news`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error fetching news");
+  }
+};
+
+// Add news
+export const addNews = async (news) => {
+  try {
+    const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+    if (!token) {
+      throw new Error("No token provided");
+    }
+    const response = await axios.post(`${API_BASE_URL}/news`, news, {
+      headers: {
+        Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+      },
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error adding news");
+  }
+};
+
+// Update news
+export const updateNews = async (id, news) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/news/${id}`, news);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error updating news");
+  }
+};
+
+// Delete news
+export const deleteNews = async (id) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/news/${id}`);
+  return response.data;
+  } catch (error) {
+    handleApiError(error, "Error deleting news");
+  }
+};
+
 /* ========================= Inbound Shipments APIs ========================= */
 export const fetchInboundShipmentsAPI = async () => {
   try {
