@@ -103,12 +103,14 @@ function Claims() {
           updated_at: new Date(), // Set updated_at to current timestamp
           ...formData, // Use filtered form data
         });
+        await fetchClaims(); // Refresh claims list
         setAlert("Claim updated successfully", "success");
       } else {
         // Create new claim using the store
         await addClaim({
           ...formData, // Use filtered form data
         });
+        await fetchClaims(); // Refresh claims list
         setAlert("Claim created successfully", "success");
       }
 

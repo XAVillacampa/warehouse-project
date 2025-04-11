@@ -274,7 +274,7 @@ app.delete("/api/inventory/:sku", async (req, res) => {
 
 /* ------------------- NEWS ANNOUNCEMENT CRUD ------------------- */
 // Get all news
-app.get('/api/news', async (req, res) => {
+app.get("/api/news", async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT 
@@ -290,59 +290,59 @@ app.get('/api/news', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching news:', err);
-    res.status(500).json({ error: 'Failed to fetch news' });
+    console.error("Error fetching news:", err);
+    res.status(500).json({ error: "Failed to fetch news" });
   }
 });
 
 // Add a new news
-app.post('/api/news', verifyToken, async (req, res) => {
+app.post("/api/news", verifyToken, async (req, res) => {
   const { id, title, content, priority } = req.body;
 
   // Extract the username from the authenticated user (from the token)
   const created_by = req.user?.username || "System";
 
   if (!id || !title || !content || !priority) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
   try {
     await db.query(
-      'INSERT INTO news_notifications (id, title, content, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+      "INSERT INTO news_notifications (id, title, content, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
       [id, title, content, priority, created_by]
     );
-    res.status(201).json({ message: 'News added successfully' });
+    res.status(201).json({ message: "News added successfully" });
   } catch (err) {
-    console.error('Error adding news:', err);
-    res.status(500).json({ error: 'Failed to add news' });
+    console.error("Error adding news:", err);
+    res.status(500).json({ error: "Failed to add news" });
   }
 });
 
 // Update a news
-app.put('/api/news/:id', async (req, res) => {
+app.put("/api/news/:id", async (req, res) => {
   const { id } = req.params;
   const { title, content, priority } = req.body;
   try {
     await db.query(
-      'UPDATE news_notifications SET title = ?, content = ?, priority = ?, updated_at = NOW() WHERE id = ?',
+      "UPDATE news_notifications SET title = ?, content = ?, priority = ?, updated_at = NOW() WHERE id = ?",
       [title, content, priority, id]
     );
-    res.json({ message: 'News updated successfully' });
+    res.json({ message: "News updated successfully" });
   } catch (err) {
-    console.error('Error updating news:', err);
-    res.status(500).json({ error: 'Failed to update news' });
+    console.error("Error updating news:", err);
+    res.status(500).json({ error: "Failed to update news" });
   }
 });
 
 // Delete a news
-app.delete('/api/news/:id', async (req, res) => {
+app.delete("/api/news/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await db.query('DELETE FROM news_notifications WHERE id = ?', [id]);
-    res.json({ message: 'News deleted successfully' });
+    await db.query("DELETE FROM news_notifications WHERE id = ?", [id]);
+    res.json({ message: "News deleted successfully" });
   } catch (err) {
-    console.error('Error deleting news:', err);
-    res.status(500).json({ error: 'Failed to delete news' });
+    console.error("Error deleting news:", err);
+    res.status(500).json({ error: "Failed to delete news" });
   }
 });
 
@@ -1415,7 +1415,7 @@ app.get("/api/claims", async (req, res) => {
       INNER JOIN Outbound_Shipments
       ON Claims.order_id = Outbound_Shipments.order_id
     `);
-    console.log("Fetched claims:", claims); // Debugging log
+    // console.log("Fetched claims:", claims); // Debugging log
     res.json(claims);
   } catch (err) {
     console.error("Error fetching claims:", err);
@@ -1460,7 +1460,7 @@ app.post("/api/claims", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Claim created successfully!",
-      claim: newClaim, // Send the new claim to the frontend
+      claim: newClaim[0], // Send the new claim to the frontend
     });
   } catch (err) {
     console.error("Error creating claim:", err);
@@ -1496,7 +1496,7 @@ app.put("/api/claims/:id", async (req, res) => {
     res.json({
       success: true,
       message: "Claim updated successfully!",
-      claim: updatedClaim, // Ensure the updated claim is included in the response
+      claim: updatedClaim[0], // Ensure the updated claim is included in the response
     });
   } catch (err) {
     console.error("Error updating claim:", err);
