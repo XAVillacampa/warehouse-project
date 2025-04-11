@@ -47,6 +47,7 @@ function NewsSection() {
     const fetchNotifications = async () => {
       try {
         const data = await fetchNews();
+        console.log("Fetched notifications:", data); // Debugging
         setNotifications(data);
       } catch (error) {
         console.error("Error fetching news:", error);
@@ -157,9 +158,8 @@ function NewsSection() {
                         {notification.title}
                       </h3>
                       <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          priorityColors[notification.priority]
-                        }`}
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityColors[notification.priority]
+                          }`}
                       >
                         {notification.priority}
                       </span>
@@ -169,10 +169,9 @@ function NewsSection() {
                     </p>
                     <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                       Posted by {notification.createdBy} on{" "}
-                      {format(
-                        new Date(notification.createdAt),
-                        "MMM d, yyyy HH:mm"
-                      )}
+                      {notification.createdAt && !isNaN(new Date(notification.createdAt).getTime())
+                        ? format(new Date(notification.createdAt), "MMM d, yyyy HH:mm")
+                        : "Invalid date"}
                     </div>
                   </div>
                   {isAdmin && (

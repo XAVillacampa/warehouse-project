@@ -274,7 +274,18 @@ app.delete("/api/inventory/:sku", async (req, res) => {
 // Get all news
 app.get('/api/news', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM news_notifications ORDER BY created_at DESC');
+    const [rows] = await db.query(
+      `SELECT 
+        id, 
+        title, 
+        content, 
+        priority, 
+        created_by AS createdBy, 
+        DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS createdAt, 
+        DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updatedAt 
+      FROM news_notifications 
+      ORDER BY created_at DESC`
+    );
     res.json(rows);
   } catch (err) {
     console.error('Error fetching news:', err);
@@ -285,13 +296,14 @@ app.get('/api/news', async (req, res) => {
 // Add a new news
 app.post('/api/news', async (req, res) => {
   const { id, title, content, priority, created_by } = req.body;
-  // Default created_by to "System" if not provided
+
   if (!id || !title || !content || !priority) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
+
   try {
     await db.query(
-      'INSERT INTO news_notifications (id, title, content, priority, created_by) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO news_notifications (id, title, content, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
       [id, title, content, priority, created_by || "System"]
     );
     res.status(201).json({ message: 'News added successfully' });
