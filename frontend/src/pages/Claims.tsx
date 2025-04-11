@@ -13,21 +13,8 @@ import Modal from "../components/Modal";
 import SearchableSelect from "../components/SearchableSelect";
 import { useForm, Controller } from "react-hook-form";
 import { useAlertStore } from "../store";
-import axios from "axios";
-
-
-interface Claim {
-  id: string;
-  order_id: string;
-  customer_name: string;
-  sku: string;
-  item_quantity: number;
-  status: string;
-  reason: string;
-  tracking_number: string;
-  response_action: string;
-  created_at: string;
-}
+import { useClaimsStore } from "../store/claims"; // Import the claims store
+import { ClaimsList } from "../types"; // Import ClaimsList from index.ts
 
 interface OutboundShipment {
   order_id: string;
@@ -37,38 +24,33 @@ interface OutboundShipment {
   tracking_number: string;
 }
 
-interface ClaimFormData {
-  order_id: string;
-  customer_name: string;
-  sku: string;
-  item_quantity: number;
-  status: string;
-  reason: string;
-  tracking_number: string;
-  response_action: string;
-  created_at: string;
-}
-
 function Claims() {
-  const [claims, setClaims] = useState<Claim[]>([]);
-  const [orders, setOrders] = useState<OutboundShipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
+  const [editingClaim, setEditingClaim] = useState<ClaimsList | null>(null); // Use ClaimsList type
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
-  const menuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { setAlert } = useAlertStore();
-  const { register, handleSubmit, reset, setValue, watch, control } = useForm<ClaimFormData>();
+  const { register, handleSubmit, reset, setValue, watch, control } =
+    useForm<ClaimsList>(); // Use ClaimsList type
+
+  const {
+    claims,
+    fetchClaims,
+    fetchOutboundShipmentsForClaims,
+    outboundShipmentsForClaims,
+    updateClaim, // Import updateClaim from the store
+    addClaim, // Import addClaim from the store
+  } = useClaimsStore(); // Use Zustand store
 
   // Fetch claims data from the backend
   useEffect(() => {
-    const fetchClaims = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/claims");
-        setClaims(response.data);
+        await fetchClaims(); // Use the store's fetchClaims method
       } catch (error) {
         console.error("Error fetching claims:", error);
         setAlert("Failed to fetch claims", "error");
@@ -77,105 +59,87 @@ function Claims() {
       }
     };
 
-    fetchClaims();
-  }, [setAlert]);
+    fetchData();
+  }, [fetchClaims, setAlert]);
 
   // Fetch orders data for the dropdown
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/outbound-shipments-for-claims");
-        if (Array.isArray(response.data)) {
-          setOrders(response.data);
-        } else {
-          setOrders([]);
-        }
+        await fetchOutboundShipmentsForClaims(); // Use the store's fetchOutboundShipmentsForClaims method
       } catch (error) {
         console.error("Error fetching orders:", error);
         setAlert("Failed to fetch orders", "error");
-        setOrders([]);
       }
     };
 
     fetchOrders();
-  }, [setAlert]);
+  }, [fetchOutboundShipmentsForClaims, setAlert]);
 
   // Automatically update SKU when Order ID changes
   const selectedOrderId = watch("order_id");
   useEffect(() => {
-    const selectedOrder = orders.find((order) => order.order_id === selectedOrderId);
+    const selectedOrder = outboundShipmentsForClaims.find(
+      (order) => order.order_id === selectedOrderId
+    );
     if (selectedOrder) {
       setValue("sku", selectedOrder.sku); // Automatically set SKU
       setValue("customer_name", selectedOrder.customer_name || ""); // Automatically set Customer Name
       setValue("item_quantity", selectedOrder.item_quantity || 0); // Automatically set Quantity
       setValue("tracking_number", selectedOrder.tracking_number || ""); // Automatically set Tracking Number
     }
-  }, [selectedOrderId, orders, setValue]);
+  }, [selectedOrderId, outboundShipmentsForClaims, setValue]);
 
   // Handle form submission for creating or editing claims
-  const onSubmit = async (data: ClaimFormData) => {
+  const onSubmit = async (data: ClaimsList) => {
     try {
-      if (editingClaim) {
-        // Update existing claim
-        const response = await axios.put(
-          `http://localhost:5000/api/claims/${editingClaim.id}`,
-          data
-        );
-        console.log("Response from server (update):", response.data); // Debugging log
+      const { id, created_at, updated_at, ...formData } = data; // Exclude backend-managed fields
 
-        // Update the claims state with the updated claim
-        setClaims((prev) =>
-          prev.map((claim) =>
-            claim.id === editingClaim.id ? { ...claim, ...data } : claim
-          )
-        );
+      if (editingClaim) {
+        // Update existing claim using the store
+        await updateClaim({
+          id: Number(editingClaim.id), // Ensure the ID is a number
+          created_at: editingClaim.created_at, // Include created_at
+          updated_at: new Date(), // Set updated_at to current timestamp
+          ...formData, // Use filtered form data
+        });
         setAlert("Claim updated successfully", "success");
       } else {
-        // Create new claim
-        const response = await axios.post("http://localhost:5000/api/claims", data);
-        console.log("Response from server (create):", response.data); // Debugging log
-
-        // Add the new claim to the claims state
-        setClaims((prev) => [...prev, response.data]);
+        // Create new claim using the store
+        await addClaim({
+          ...formData, // Use filtered form data
+        });
         setAlert("Claim created successfully", "success");
       }
 
       closeModal();
     } catch (error) {
       console.error("Error saving claim:", error);
-      console.error("Error details:", error.response?.data || error.message); // Debugging log
       setAlert("Failed to save claim", "error");
     }
   };
 
   // Open modal for creating or editing a claim
-  const openEditModal = (claim?: Claim) => {
+  const openEditModal = (claim?: ClaimsList) => {
     setEditingClaim(claim || null);
     setIsModalOpen(true);
     reset(
       claim
         ? {
-          order_id: claim.order_id,
-          customer_name: claim.customer_name,
-          sku: claim.sku,
-          item_quantity: claim.item_quantity,
-          status: claim.status,
-          reason: claim.reason,
-          tracking_number: claim.tracking_number,
-          response_action: claim.response_action,
-          created_at: claim.created_at,
-        }
+            ...claim, // Spread the claim object to include all fields
+            created_at: claim.created_at || new Date(), // Ensure created_at is set
+          }
         : {
-          order_id: "",
-          customer_name: "",
-          sku: "",
-          item_quantity: 0,
-          status: "New",
-          reason: "",
-          tracking_number: "",
-          response_action: "",
-          created_at: "",
-        }
+            order_id: "",
+            customer_name: "",
+            sku: "",
+            item_quantity: 0,
+            status: "New",
+            reason: "",
+            tracking_number: "",
+            response_action: "",
+            created_at: new Date(), // Set default created_at
+          }
     );
   };
 
@@ -195,7 +159,7 @@ function Claims() {
     };
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenActionMenu(null);
       }
     };
@@ -218,7 +182,8 @@ function Claims() {
           return false;
         }
 
-        const searchString = `${claim.order_id} ${claim.sku} ${claim.customer_name}`.toLowerCase();
+        const searchString =
+          `${claim.order_id} ${claim.sku} ${claim.customer_name}`.toLowerCase();
         return searchString.includes(searchTerm.toLowerCase());
       })
       .sort(
@@ -230,11 +195,10 @@ function Claims() {
   }, [claims, searchTerm, selectedStatus]);
 
   // Handle deleting a claim
-  const handleDeleteClaim = async (claimId: string) => {
+  const handleDeleteClaim = async (claimId: number) => {
     if (window.confirm("Are you sure you want to delete this claim?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/claims/${claimId}`);
-        setClaims((prev) => prev.filter((claim) => claim.id !== claimId));
+        await useClaimsStore.getState().deleteClaim(claimId); // Use the store's deleteClaim method
         setAlert("Claim deleted successfully", "success");
       } catch (error) {
         console.error("Error deleting claim:", error);
@@ -388,7 +352,11 @@ function Claims() {
                       <td className="px-6 py-4 text-right text-sm font-medium relative">
                         <button
                           onClick={() =>
-                            setOpenActionMenu(openActionMenu === claim.id ? null : claim.id)
+                            setOpenActionMenu(
+                              openActionMenu === String(claim.id)
+                                ? null
+                                : String(claim.id)
+                            )
                           }
                           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                         >
@@ -396,7 +364,7 @@ function Claims() {
                         </button>
 
                         {/* Action menu */}
-                        {openActionMenu === claim.id && (
+                        {openActionMenu === String(claim.id) && (
                           <div
                             ref={menuRef}
                             className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
@@ -460,20 +428,33 @@ function Claims() {
               render={({ field, fieldState }) => (
                 <>
                   <SearchableSelect
-                    options={orders.map((order) => ({
+                    options={outboundShipmentsForClaims.map((order) => ({
                       value: order.order_id,
                       label: `[${order.order_id}] ${order.customer_name}`,
                       description: `SKU: ${order.sku} | Quantity: ${order.item_quantity} | Tracking: ${order.tracking_number}`,
+                      vendor_number: order.vendor_number || "", // Add vendor_number
+                      warehouse_code: order.warehouse_code || "", // Add warehouse_code
                     }))}
                     value={field.value}
                     onChange={(value) => {
                       field.onChange(value); // Update the selected Order ID
-                      const selectedOrder = orders.find((order) => order.order_id === value);
+                      const selectedOrder = outboundShipmentsForClaims.find(
+                        (order) => order.order_id === value
+                      );
                       if (selectedOrder) {
                         setValue("sku", selectedOrder.sku);
-                        setValue("customer_name", selectedOrder.customer_name || "");
-                        setValue("item_quantity", selectedOrder.item_quantity || 0);
-                        setValue("tracking_number", selectedOrder.tracking_number || "");
+                        setValue(
+                          "customer_name",
+                          selectedOrder.customer_name || ""
+                        );
+                        setValue(
+                          "item_quantity",
+                          selectedOrder.item_quantity || 0
+                        );
+                        setValue(
+                          "tracking_number",
+                          selectedOrder.tracking_number || ""
+                        );
                       }
                     }}
                     placeholder="Search and select an Order ID..."

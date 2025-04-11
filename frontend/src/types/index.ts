@@ -102,4 +102,6 @@ export interface ClaimsList {
   updated_at: Date;
 }
 
+export type NewClaim = Omit<ClaimsList, "id" | "created_at" | "updated_at">;
+
 // Remove BillingItem interface as it's no longer needed

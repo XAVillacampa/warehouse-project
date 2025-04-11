@@ -545,3 +545,68 @@ export const cancelBillingAPI = async (billingId) => {
     handleApiError(error, "Error cancelling billing");
   }
 };
+
+/* ========================= Claims APIs ========================= */
+
+// Fetch all claims
+export const fetchClaimsAPI = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/claims`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error fetching claims");
+  }
+};
+
+// Create a new claim
+export const addClaimAPI = async (claim) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/claims`, claim);
+    return {
+      success: response.data.success,
+      message: response.data.message,
+      claim: response.data.claim, // Return the created claim
+    };
+  } catch (error) {
+    handleApiError(error, "Error adding claim");
+  }
+};
+
+// Update a claim
+export const updateClaimAPI = async (claimId, claim) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/claims/${claimId}`,
+      claim
+    );
+    return {
+      success: response.data.success,
+      message: response.data.message,
+      claim: response.data.claim, // Return the updated claim
+    };
+  } catch (error) {
+    handleApiError(error, "Error updating claim");
+  }
+};
+
+// Delete a claim
+export const deleteClaimAPI = async (claimId) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/claims/${claimId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error deleting claim");
+  }
+};
+
+// Fetch outbound shipments for claims
+export const fetchOutboundShipmentsForClaimsAPI = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/outbound-shipments-for-claims`
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error, "Error fetching outbound shipments for claims");
+  }
+};

@@ -24,7 +24,9 @@ if (
   !process.env.DB_NAME ||
   !process.env.DB_PORT
 ) {
-  console.error("Missing required environment variables for database connection.");
+  console.error(
+    "Missing required environment variables for database connection."
+  );
   process.exit(1);
 }
 
@@ -73,8 +75,8 @@ function formatDateForMySQL(date) {
   return `${year}-${month}-${day}`;
 }
 
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
 });
 
 // Connect to MySQL database
@@ -1361,7 +1363,7 @@ app.post("/api/claims", async (req, res) => {
   } = req.body;
 
   try {
-    await db.execute(
+    const [result] = await db.execute(
       `INSERT INTO Claims (order_id, customer_name, sku, item_quantity, status, reason, tracking_number, response_action, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
@@ -1376,7 +1378,16 @@ app.post("/api/claims", async (req, res) => {
       ]
     );
 
-    res.status(201).json({ message: "Claim created successfully" });
+    // Fetch the newly created claim
+    const [newClaim] = await db.execute(`SELECT * FROM Claims WHERE id = ?`, [
+      result.insertId,
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "Claim created successfully!",
+      claim: newClaim, // Send the new claim to the frontend
+    });
   } catch (err) {
     console.error("Error creating claim:", err);
     res.status(500).json({ error: "Failed to create claim" });
@@ -1398,7 +1409,21 @@ app.put("/api/claims/:id", async (req, res) => {
       return res.status(404).json({ error: "Claim not found" });
     }
 
-    res.json({ message: "Claim updated successfully" });
+    // Fetch the updated claim
+    const [updatedClaim] = await db.execute(
+      `SELECT * FROM Claims WHERE id = ?`,
+      [id]
+    );
+
+    console.log("Updated claim:", updatedClaim); // Debugging log
+    if (updatedClaim.length === 0) {
+      return res.status(404).json({ error: "Claim not found" });
+    }
+    res.json({
+      success: true,
+      message: "Claim updated successfully!",
+      claim: updatedClaim, // Ensure the updated claim is included in the response
+    });
   } catch (err) {
     console.error("Error updating claim:", err);
     res.status(500).json({ error: "Failed to update claim" });
