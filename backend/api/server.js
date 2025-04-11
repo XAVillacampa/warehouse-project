@@ -294,8 +294,11 @@ app.get('/api/news', async (req, res) => {
 });
 
 // Add a new news
-app.post('/api/news', async (req, res) => {
-  const { id, title, content, priority, created_by } = req.body;
+app.post('/api/news', verifyToken, async (req, res) => {
+  const { id, title, content, priority } = req.body;
+
+  // Extract the username from the authenticated user (from the token)
+  const created_by = req.user?.username || "System";
 
   if (!id || !title || !content || !priority) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -304,7 +307,7 @@ app.post('/api/news', async (req, res) => {
   try {
     await db.query(
       'INSERT INTO news_notifications (id, title, content, priority, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-      [id, title, content, priority, created_by || "System"]
+      [id, title, content, priority, created_by]
     );
     res.status(201).json({ message: 'News added successfully' });
   } catch (err) {
