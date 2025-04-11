@@ -270,6 +270,65 @@ app.delete("/api/inventory/:sku", async (req, res) => {
   }
 });
 
+/* ------------------- NEWS ANNOUNCEMENT CRUD ------------------- */
+// Get all news
+app.get('/api/news', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM news_notifications ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching news:', err);
+    res.status(500).json({ error: 'Failed to fetch news' });
+  }
+});
+
+// Add a new news
+app.post('/api/news', async (req, res) => {
+  const { id, title, content, priority, created_by } = req.body;
+  // Default created_by to "System" if not provided
+  if (!id || !title || !content || !priority) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  try {
+    await db.query(
+      'INSERT INTO news_notifications (id, title, content, priority, created_by) VALUES (?, ?, ?, ?, ?)',
+      [id, title, content, priority, created_by || "System"]
+    );
+    res.status(201).json({ message: 'News added successfully' });
+  } catch (err) {
+    console.error('Error adding news:', err);
+    res.status(500).json({ error: 'Failed to add news' });
+  }
+});
+
+// Update a news
+app.put('/api/news/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, content, priority } = req.body;
+  try {
+    await db.query(
+      'UPDATE news_notifications SET title = ?, content = ?, priority = ?, updated_at = NOW() WHERE id = ?',
+      [title, content, priority, id]
+    );
+    res.json({ message: 'News updated successfully' });
+  } catch (err) {
+    console.error('Error updating news:', err);
+    res.status(500).json({ error: 'Failed to update news' });
+  }
+});
+
+// Delete a news
+app.delete('/api/news/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM news_notifications WHERE id = ?', [id]);
+    res.json({ message: 'News deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting news:', err);
+    res.status(500).json({ error: 'Failed to delete news' });
+  }
+});
+
 /* ------------------- INBOUND SHIPMENTS CRUD ------------------- */
 
 // Get all inbound shipments

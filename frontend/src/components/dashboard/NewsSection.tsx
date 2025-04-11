@@ -1,11 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Edit2, Trash2, Plus, AlertCircle } from "lucide-react";
-import { useNewsStore } from "../../store/news";
-import { useAuthStore } from "../../store/auth";
 import Modal from "../Modal";
 import { useForm } from "react-hook-form";
-import { NewsNotification } from "../../types";
 import { format } from "date-fns";
+import {
+  fetchNews,
+  addNews,
+  updateNews,
+  deleteNews,
+} from "../../services/api";
+import { useAuthStore } from "../../store/auth";
+
+interface NewsNotification {
+  id: string;
+  title: string;
+  content: string;
+  priority: "low" | "medium" | "high";
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
 
 interface NewsFormData {
   title: string;
@@ -14,14 +28,9 @@ interface NewsFormData {
 }
 
 function NewsSection() {
+  const [notifications, setNotifications] = useState<NewsNotification[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNews, setEditingNews] = useState<NewsNotification | null>(null);
-  const {
-    notifications,
-    addNotification,
-    updateNotification,
-    deleteNotification,
-  } = useNewsStore();
   const { user } = useAuthStore();
   const { register, handleSubmit, reset } = useForm<NewsFormData>();
 
@@ -29,29 +38,53 @@ function NewsSection() {
 
   const priorityColors = {
     low: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    medium:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
     high: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   };
 
-  const onSubmit = (data: NewsFormData) => {
-    if (editingNews) {
-      updateNotification({
-        ...editingNews,
-        ...data,
-        updatedAt: new Date(),
-      });
-    } else {
-      const newNotification: NewsNotification = {
-        id: crypto.randomUUID(),
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        createdBy: user?.name || "Unknown",
-      };
-      addNotification(newNotification);
+  // Fetch news notifications on component mount
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const data = await fetchNews();
+        setNotifications(data);
+      } catch (error) {
+        console.error("Error fetching news:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const onSubmit = async (data: NewsFormData) => {
+    try {
+      if (editingNews) {
+        // Update existing news
+        const updatedNews: NewsNotification = {
+          ...editingNews,
+          ...data,
+          updatedAt: new Date(),
+        };
+        await updateNews(editingNews.id, updatedNews);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === editingNews.id ? updatedNews : n))
+        );
+      } else {
+        // Add new news
+        const newNotification: NewsNotification = {
+          id: crypto.randomUUID(),
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: user?.username || "Unknown", // Add created_by field
+        };
+        await addNews(newNotification);
+        setNotifications((prev) => [newNotification, ...prev]);
+      }
+      closeModal();
+    } catch (error) {
+      console.error("Error saving news:", error);
     }
-    closeModal();
   };
 
   const closeModal = () => {
@@ -65,9 +98,14 @@ function NewsSection() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this notification?")) {
-      deleteNotification(id);
+      try {
+        await deleteNews(id);
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      } catch (error) {
+        console.error("Error deleting news:", error);
+      }
     }
   };
 
