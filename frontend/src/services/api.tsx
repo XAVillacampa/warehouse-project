@@ -32,8 +32,9 @@ export const addProductAPI = async (product) => {
 
 export const updateProductAPI = async (sku, product) => {
   try {
+    const encodedSku = encodeURIComponent(sku); // Encode the SKU
     const response = await axios.put(
-      `${API_BASE_URL}/inventory/${sku}`,
+      `${API_BASE_URL}/inventory/${encodedSku}`,
       product
     );
     console.log(`Updated product (SKU: ${sku}):`, response.data);
