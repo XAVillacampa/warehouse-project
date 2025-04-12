@@ -1546,24 +1546,11 @@ app.get("/api/outbound-shipments-for-claims", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    // Execute query and destructure rows
     const [rows] = await db.execute(
       "SELECT * FROM Users WHERE LOWER(email) = LOWER(?)",
       [email]
     );
 
-    // Log the rows to confirm correct format
-    console.log("Rows from DB:", rows);
-
-    // Ensure rows is an array
-    if (!Array.isArray(rows)) {
-      console.error("Unexpected rows format:", rows);
-      return res
-        .status(500)
-        .json({ message: "Database error: Unexpected rows format" });
-    }
-
-    // Get the user
     const user = rows[0];
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -1574,26 +1561,11 @@ app.post("/api/login", async (req, res) => {
         .json({ message: "Account suspended. Please contact administrator." });
     }
 
-    if (user.password === password) {
-      console.log("Plain text password detected. Hashing and updating it...");
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Update the user's password in the database
-      await db.execute("UPDATE Users SET password = ? WHERE id = ?", [
-        hashedPassword,
-        user.id,
-      ]);
-
-      // Update the user object to use the new hashed password
-      user.password = hashedPassword;
-    }
-
     // Verify the password
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
     console.log("Password provided:", password);
     console.log("Password from DB:", user.password);
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
     console.log("Password match:", isPasswordMatch);
-
     if (!isPasswordMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -1652,6 +1624,7 @@ app.post("/api/users", async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Hashed Password:", hashedPassword);
 
     // Insert the new user
     const [result] = await db.execute(
