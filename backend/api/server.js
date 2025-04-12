@@ -1546,11 +1546,24 @@ app.get("/api/outbound-shipments-for-claims", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   try {
+    // Execute query and destructure rows
     const [rows] = await db.execute(
       "SELECT * FROM Users WHERE LOWER(email) = LOWER(?)",
       [email]
     );
 
+    // Log the rows to confirm correct format
+    console.log("Rows from DB:", rows);
+
+    // Ensure rows is an array
+    if (!Array.isArray(rows)) {
+      console.error("Unexpected rows format:", rows);
+      return res
+        .status(500)
+        .json({ message: "Database error: Unexpected rows format" });
+    }
+
+    // Get the user
     const user = rows[0];
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -1561,8 +1574,26 @@ app.post("/api/login", async (req, res) => {
         .json({ message: "Account suspended. Please contact administrator." });
     }
 
+    if (user.password === password) {
+      console.log("Plain text password detected. Hashing and updating it...");
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Update the user's password in the database
+      await db.execute("UPDATE Users SET password = ? WHERE id = ?", [
+        hashedPassword,
+        user.id,
+      ]);
+
+      // Update the user object to use the new hashed password
+      user.password = hashedPassword;
+    }
+
     // Verify the password
     const isPasswordMatch = await bcrypt.compare(password, user.password);
+    console.log("Password provided:", password);
+    console.log("Password from DB:", user.password);
+    console.log("Password match:", isPasswordMatch);
+
     if (!isPasswordMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -1610,15 +1641,6 @@ app.post("/api/users", async (req, res) => {
   const { email, username, password, role, vendor_number } = req.body;
 
   try {
-    console.log("Registering user with values:");
-    console.log("Email:", email);
-    console.log("Username:", username);
-    console.log("Password:", password);
-    console.log("Role:", role);
-    console.log("Vendor Number:", vendor_number);
-
-    const finalVendorNumber = vendor_number || null;
-
     // Check if email already exists
     const [existing] = await db.execute(
       "SELECT id FROM Users WHERE LOWER(email) = LOWER(?)",
@@ -1632,13 +1654,11 @@ app.post("/api/users", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert the new user
-    console.log("Inserting user into database...");
     const [result] = await db.execute(
       `INSERT INTO Users (email, username, password, role, vendor_number, activity_status)
        VALUES (?, ?, ?, ?, ?, 'active')`,
-      [email, username, hashedPassword, role, finalVendorNumber]
+      [email, username, hashedPassword, role, vendor_number || null]
     );
-    console.log("Insert result:", result);
 
     // Retrieve the newly created user
     const [rows] = await db.execute("SELECT * FROM Users WHERE id = ?", [
