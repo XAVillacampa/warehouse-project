@@ -1624,7 +1624,7 @@ app.post("/api/users", async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Hashed Password:", hashedPassword);
+    console.log("Hashed Password (User Creation):", hashedPassword); // Debugging
 
     // Insert the new user
     const [result] = await db.execute(
@@ -1632,7 +1632,6 @@ app.post("/api/users", async (req, res) => {
        VALUES (?, ?, ?, ?, ?, 'active')`,
       [email, username, hashedPassword, role, vendor_number || null]
     );
-
     // Retrieve the newly created user
     const [rows] = await db.execute("SELECT * FROM Users WHERE id = ?", [
       result.insertId,
@@ -1641,9 +1640,11 @@ app.post("/api/users", async (req, res) => {
     const { password: pwd, ...userWithoutPassword } = newUser;
 
     res.status(201).json(userWithoutPassword);
+
+    res.status(201).json({ message: "User created successfully" });
   } catch (err) {
     console.error("Registration Error:", err);
-    res.status(500).json({ message: err.message || "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -1737,6 +1738,7 @@ app.put("/api/users/:id/reset-password", verifyToken, async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log("Reset Hashed Password:", hashedPassword); // Debugging
     await db.execute("UPDATE Users SET password = ? WHERE id = ?", [
       hashedPassword,
       userId,

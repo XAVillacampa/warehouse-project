@@ -144,13 +144,10 @@ const resetPasswordForm = () => {
       if (editingUser) {
         // Update existing user
         const updatedUser: UserData = { ...editingUser, ...data };
-        const result = updateUser(updatedUser);
+        await updateUser(updatedUser);
         setAlert("User updated successfully", "success");
       } else {
         // Add new user
-        const hashedPassword = data.password
-          ? await bcrypt.hash(data.password, 10)
-          : undefined;
         const newUser: UserData = {
           id: crypto.randomUUID(),
           email: data.email,
@@ -158,17 +155,18 @@ const resetPasswordForm = () => {
           role: data.role,
           vendor_number:
             data.role === "vendor" ? data.vendor_number : undefined,
-          password: hashedPassword,
+          password: data.password,
           isSuspended: false,
           created_at: formatDateForMySQL(new Date()),
           updated_at: formatDateForMySQL(new Date()),
         };
-        console.log(newUser);
+        console.log("New User", newUser);
         await addUser(newUser);
         setAlert("User added successfully", "success");
       }
       closeModal();
     } catch (error) {
+      console.error("Error saving user:", error); // Log error for debugging
       setAlert("Failed to save user", "error");
     }
   };

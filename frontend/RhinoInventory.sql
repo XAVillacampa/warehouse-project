@@ -372,6 +372,8 @@ CREATE TABLE
     FOREIGN KEY (order_id) REFERENCES Outbound_Shipments (order_id)
   );
 
+SELECT * FROM `Billing`;
+
 DROP TABLE Billing;
 
 CREATE TABLE news_notifications (
