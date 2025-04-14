@@ -31,6 +31,10 @@ function Claims() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { setAlert } = useAlertStore();
@@ -156,13 +160,13 @@ function Claims() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpenActionMenu(null);
+        setOpenActionMenu(null); // Close the dropdown on Escape key press
       }
     };
 
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenActionMenu(null);
+        setOpenActionMenu(null); // Close the dropdown if clicked outside
       }
     };
 
@@ -173,7 +177,7 @@ function Claims() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [menuRef]);
 
   // Filter claims based on search term and status
   const filteredClaims = useMemo(() => {
@@ -207,6 +211,20 @@ function Claims() {
         setAlert("Failed to delete claim", "error");
       }
     }
+  };
+
+  const handleActionMenuClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    claimId: string
+  ) => {
+    const buttonRect = (
+      event.currentTarget as HTMLElement
+    ).getBoundingClientRect();
+    setDropdownPosition({
+      top: buttonRect.bottom, // Position the dropdown directly below the button
+      left: buttonRect.left + buttonRect.width / 2, // Center horizontally relative to the button
+    });
+    setOpenActionMenu(openActionMenu === claimId ? null : claimId);
   };
 
   // Skeleton loader for table rows
@@ -353,12 +371,8 @@ function Claims() {
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-medium relative">
                         <button
-                          onClick={() =>
-                            setOpenActionMenu(
-                              openActionMenu === String(claim.id)
-                                ? null
-                                : String(claim.id)
-                            )
+                          onClick={(event) =>
+                            handleActionMenuClick(event, String(claim.id))
                           }
                           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                         >
@@ -366,42 +380,49 @@ function Claims() {
                         </button>
 
                         {/* Action menu */}
-                        {openActionMenu === String(claim.id) && (
-                          <div
-                            ref={menuRef}
-                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
-                          >
-                            <ul
-                              className="py-1"
-                              role="menu"
-                              aria-orientation="vertical"
+                        {openActionMenu === String(claim.id) &&
+                          dropdownPosition && (
+                            <div
+                              ref={menuRef}
+                              className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                              style={{
+                                position: "fixed", // Ensure the dropdown is positioned relative to the viewport
+                                top: dropdownPosition.top,
+                                left: dropdownPosition.left,
+                                transform: "translateX(-50%)", // Center the dropdown horizontally
+                              }}
                             >
-                              {/* Edit Action */}
-                              <li
-                                onClick={() => {
-                                  openEditModal(claim);
-                                  setOpenActionMenu(null);
-                                }}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                              <ul
+                                className="py-1"
+                                role="menu"
+                                aria-orientation="vertical"
                               >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </li>
+                                {/* Edit Action */}
+                                <li
+                                  onClick={() => {
+                                    openEditModal(claim);
+                                    setOpenActionMenu(null);
+                                  }}
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </li>
 
-                              {/* Delete Action */}
-                              <li
-                                onClick={() => {
-                                  handleDeleteClaim(claim.id);
-                                  setOpenActionMenu(null);
-                                }}
-                                className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </li>
-                            </ul>
-                          </div>
-                        )}
+                                {/* Delete Action */}
+                                <li
+                                  onClick={() => {
+                                    handleDeleteClaim(claim.id);
+                                    setOpenActionMenu(null);
+                                  }}
+                                  className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </li>
+                              </ul>
+                            </div>
+                          )}
                       </td>
                     </tr>
                   ))

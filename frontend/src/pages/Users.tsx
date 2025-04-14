@@ -35,7 +35,6 @@ interface PasswordResetData {
   confirmPassword?: string;
 }
 
-
 function Users() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPasswordResetModalOpen, setIsPasswordResetModalOpen] =
@@ -43,11 +42,15 @@ function Users() {
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<
     "all" | "active" | "suspended"
   >("all");
-  const menuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { register, handleSubmit, reset, watch } = useForm<UserData>();
   const {
@@ -57,9 +60,9 @@ function Users() {
     reset: resetReset,
   } = useForm<Partial<PasswordResetData>>();
   // Function to clear the password fields
-const resetPasswordForm = () => {
-  resetReset({ newPassword: "", confirmPassword: "" }); // Ensure you're using the right reset function
-};
+  const resetPasswordForm = () => {
+    resetReset({ newPassword: "", confirmPassword: "" }); // Ensure you're using the right reset function
+  };
 
   const {
     users,
@@ -89,6 +92,28 @@ const resetPasswordForm = () => {
       console.warn("No token found, not fetching users.");
     }
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenActionMenu(null); // Close the dropdown on Escape key press
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenActionMenu(null); // Close the dropdown if clicked outside
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuRef]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -172,39 +197,44 @@ const resetPasswordForm = () => {
   };
 
   const onPasswordReset = async (data: Partial<PasswordResetData>) => {
-  if (!selectedUserId) {
-    setAlert("No user selected for password reset", "error");
-    return;
-  }
-
-  if (!data.newPassword || data.newPassword.trim() === "") {
-    setAlert("New password is required", "error");
-    return;
-  }
-
-  if (data.newPassword !== data.confirmPassword) {
-    setAlert("New password and confirm password do not match", "error");
-    return;
-  }
-
-  try {
-    const response: any = await resetUserPassword(selectedUserId, data.newPassword);
-
-    // Check if response has a message (ensure backend returns a consistent message)
-    if (response && response.message === "Password reset successfully") {
-      setAlert("Password reset successfully", "success");
-    } else {
-      setAlert("Password reset may not have completed successfully", "warning");
+    if (!selectedUserId) {
+      setAlert("No user selected for password reset", "error");
+      return;
     }
 
-    setIsPasswordResetModalOpen(false);
-    resetPasswordForm(); // Clear the form fields
-  } catch (error) {
-    console.error("Error resetting password:", error); // Log error for debugging
-    setAlert("Failed to reset password", "error");
-  }
-};
+    if (!data.newPassword || data.newPassword.trim() === "") {
+      setAlert("New password is required", "error");
+      return;
+    }
 
+    if (data.newPassword !== data.confirmPassword) {
+      setAlert("New password and confirm password do not match", "error");
+      return;
+    }
+
+    try {
+      const response: any = await resetUserPassword(
+        selectedUserId,
+        data.newPassword
+      );
+
+      // Check if response has a message (ensure backend returns a consistent message)
+      if (response && response.message === "Password reset successfully") {
+        setAlert("Password reset successfully", "success");
+      } else {
+        setAlert(
+          "Password reset may not have completed successfully",
+          "warning"
+        );
+      }
+
+      setIsPasswordResetModalOpen(false);
+      resetPasswordForm(); // Clear the form fields
+    } catch (error) {
+      console.error("Error resetting password:", error); // Log error for debugging
+      setAlert("Failed to reset password", "error");
+    }
+  };
 
   const handleSuspendUser = async (userId: string) => {
     try {
@@ -239,6 +269,20 @@ const resetPasswordForm = () => {
         setAlert("Failed to delete user", "error");
       }
     }
+  };
+
+  const handleActionMenuClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    userId: string
+  ) => {
+    const buttonRect = (
+      event.currentTarget as HTMLElement
+    ).getBoundingClientRect();
+    setDropdownPosition({
+      top: buttonRect.bottom, // Position the dropdown directly below the button
+      left: buttonRect.left + buttonRect.width / 2, // Center horizontally relative to the button
+    });
+    setOpenActionMenu(openActionMenu === userId ? null : userId);
   };
 
   const closeModal = () => {
@@ -506,85 +550,52 @@ const resetPasswordForm = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="relative inline-block text-left">
                           <button
-                            onClick={() =>
-                              setOpenActionMenu(
-                                openActionMenu === user.id ? null : user.id
-                              )
+                            onClick={(event) =>
+                              handleActionMenuClick(event, user.id)
                             }
                             className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                           >
                             <MoreVertical className="h-5 w-5" />
                           </button>
                         </div>
-                        {openActionMenu === user.id && (
+                        {openActionMenu === user.id && dropdownPosition && (
                           <div
                             ref={menuRef}
-                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
+                            className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                            style={{
+                              position: "fixed", // Ensure the dropdown is positioned relative to the viewport
+                              top: dropdownPosition.top,
+                              left: dropdownPosition.left,
+                              transform: "translateX(-50%)", // Center the dropdown horizontally
+                            }}
                           >
-                            <div className="py-1" role="menu">
-                              <button
-                                onClick={() => {
-                                  setSelectedUserId(user.id);
-                                  setIsPasswordResetModalOpen(true);
-                                  setOpenActionMenu(null);
-                                }}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
-                              >
-                                <Key className="h-4 w-4 mr-2" />
-                                Reset Password
-                              </button>
-                              <button
+                            <ul
+                              className="py-1"
+                              role="menu"
+                              aria-orientation="vertical"
+                            >
+                              <li
                                 onClick={() => {
                                   setEditingUser(user);
                                   setIsModalOpen(true);
                                   setOpenActionMenu(null);
                                 }}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
                               >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
-                              </button>
-                              <button
-                                onClick={() =>
-                                  user.isSuspended
-                                    ? handleActivateUser(user.id)
-                                    : handleSuspendUser(user.id)
-                                }
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
+                              </li>
+                              <li
+                                onClick={() => {
+                                  handleDeleteUser(user.id);
+                                  setOpenActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
                               >
-                                {user.isSuspended ? (
-                                  <>
-                                    <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                                    Activate
-                                  </>
-                                ) : (
-                                  <>
-                                    <Ban className="h-4 w-4 mr-2 text-red-500" />
-                                    Suspend
-                                  </>
-                                )}
-                              </button>
-                              {(user.role !== "admin" ||
-                                (user.role === "admin" &&
-                                  users.filter((u) => u.role === "admin")
-                                    .length > 1)) && (
-                                <button
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        "Are you sure you want to delete this user? This action cannot be undone."
-                                      )
-                                    ) {
-                                      handleDeleteUser(user.id);
-                                    }
-                                  }}
-                                  className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Account
-                                </button>
-                              )}
-                            </div>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </li>
+                            </ul>
                           </div>
                         )}
                       </td>

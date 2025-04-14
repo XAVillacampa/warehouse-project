@@ -43,7 +43,11 @@ function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedNames, setExpandedNames] = useState<Set<string>>(new Set());
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
-  // const [allProducts, setAllProducts] = useState([]);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef(null);
 
   const { register, handleSubmit, reset, setValue, watch } =
@@ -90,6 +94,19 @@ function Products() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (openActionMenu) {
+        setOpenActionMenu(null); // Close the dropdown on resize to avoid misalignment
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [openActionMenu]);
 
   // Filter products
   const filteredInventory = useMemo(() => {
@@ -233,6 +250,20 @@ function Products() {
     return product_name.length > 30
       ? `${product_name.substring(0, 30)}...`
       : product_name; // Return truncated name
+  };
+
+  const handleActionMenuClick = (
+    event: React.MouseEvent<HTMLDivElement>,
+    sku: string
+  ) => {
+    const buttonRect = (
+      event.currentTarget as HTMLElement
+    ).getBoundingClientRect();
+    setDropdownPosition({
+      top: buttonRect.bottom, // Position the dropdown directly below the button
+      left: buttonRect.left + buttonRect.width / 2, // Center horizontally relative to the button
+    });
+    setOpenActionMenu(openActionMenu === sku ? null : sku);
   };
 
   return (
@@ -501,66 +532,69 @@ function Products() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="relative inline-block text-left">
                           <div
-                            onClick={() => {
-                              setOpenActionMenu(
-                                openActionMenu === inventory.sku
-                                  ? null
-                                  : inventory.sku
-                              );
-                            }}
+                            onClick={(e) =>
+                              handleActionMenuClick(e, inventory.sku)
+                            }
                             className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                             role="button"
                           >
                             <MoreVertical className="h-5 w-5" />
                           </div>
-                        </div>
-                        {openActionMenu === inventory.sku && (
-                          <div
-                            ref={menuRef}
-                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
-                          >
-                            <ul
-                              className="py-1"
-                              role="menu"
-                              aria-orientation="vertical"
-                            >
-                              <li
-                                onClick={() => {
-                                  openLogChanges(inventory);
-                                  setOpenActionMenu(null);
+                          {openActionMenu === inventory.sku &&
+                            dropdownPosition && (
+                              <div
+                                ref={menuRef}
+                                className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                                style={{
+                                  position: "fixed", // Ensure the dropdown is positioned relative to the viewport
+                                  top: dropdownPosition.top,
+                                  left: dropdownPosition.left - 24, // Adjust to center the dropdown (half of its width)
+                                  transform: "translateX(-50%)", // Center the dropdown horizontally
                                 }}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
                               >
-                                <History className="h-4 w-4 mr-2" />
-                                View Log Changes
-                              </li>
-                              {canEdit && (
-                                <>
+                                <ul
+                                  className="py-1"
+                                  role="menu"
+                                  aria-orientation="vertical"
+                                >
                                   <li
                                     onClick={() => {
-                                      openEditModal(inventory);
+                                      openLogChanges(inventory);
                                       setOpenActionMenu(null);
                                     }}
                                     className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
                                   >
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Edit
+                                    <History className="h-4 w-4 mr-2" />
+                                    View Log Changes
                                   </li>
-                                  <li
-                                    onClick={() => {
-                                      handleDeleteProduct(inventory.sku);
-                                      setOpenActionMenu(null);
-                                    }}
-                                    className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </li>
-                                </>
-                              )}
-                            </ul>
-                          </div>
-                        )}
+                                  {canEdit && (
+                                    <>
+                                      <li
+                                        onClick={() => {
+                                          openEditModal(inventory);
+                                          setOpenActionMenu(null);
+                                        }}
+                                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                      >
+                                        <Pencil className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </li>
+                                      <li
+                                        onClick={() => {
+                                          handleDeleteProduct(inventory.sku);
+                                          setOpenActionMenu(null);
+                                        }}
+                                        className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </li>
+                                    </>
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
                       </td>
                     </tr>
                   ))

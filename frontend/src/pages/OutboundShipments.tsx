@@ -50,6 +50,10 @@ function OutboundShipments() {
     useState<OutboundShipment | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isAddTrackingModalOpen, setIsAddTrackingModalOpen] = useState(false);
   const [currentShipment, setCurrentShipment] =
@@ -381,6 +385,20 @@ function OutboundShipments() {
     setIsAddTrackingModalOpen(false);
     setCurrentShipment(null);
     reset();
+  };
+
+  const handleActionMenuClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    shipmentId: string
+  ) => {
+    const buttonRect = (
+      event.currentTarget as HTMLElement
+    ).getBoundingClientRect();
+    setDropdownPosition({
+      top: buttonRect.bottom, // Position the dropdown directly below the button
+      left: buttonRect.left + buttonRect.width / 2, // Center horizontally relative to the button
+    });
+    setOpenActionMenu(openActionMenu === shipmentId ? null : shipmentId);
   };
 
   return (
@@ -752,18 +770,12 @@ function OutboundShipments() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="relative inline-block text-left">
                             <button
-                              onClick={() => {
-                                setOpenActionMenu(
-                                  openActionMenu === shipments.id?.toString()
-                                    ? null
-                                    : shipments.id?.toString()
-                                );
-                                // console.log(
-                                //   "Open action menu:",
-                                //   openActionMenu,
-                                //   shipments
-                                // );
-                              }}
+                              onClick={(event) =>
+                                handleActionMenuClick(
+                                  event,
+                                  shipments.id?.toString()
+                                )
+                              }
                               className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 text-center"
                             >
                               <MoreVertical className="h-5 w-5" />
@@ -771,55 +783,62 @@ function OutboundShipments() {
                           </div>
 
                           {/* Action menu */}
-                          {openActionMenu === shipments.id?.toString() && (
-                            <div
-                              ref={menuRef}
-                              className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
-                            >
-                              <ul
-                                className="py-1"
-                                role="menu"
-                                aria-orientation="vertical"
+                          {openActionMenu === shipments.id?.toString() &&
+                            dropdownPosition && (
+                              <div
+                                ref={menuRef}
+                                className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                                style={{
+                                  position: "fixed", // Ensure the dropdown is positioned relative to the viewport
+                                  top: dropdownPosition.top,
+                                  left: dropdownPosition.left,
+                                  transform: "translateX(-50%)", // Center the dropdown horizontally
+                                }}
                               >
-                                <li
-                                  onClick={() => {
-                                    openEditModal(shipments);
-                                    setOpenActionMenu(null);
-                                  }}
-                                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                <ul
+                                  className="py-1"
+                                  role="menu"
+                                  aria-orientation="vertical"
                                 >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </li>
+                                  <li
+                                    onClick={() => {
+                                      openEditModal(shipments);
+                                      setOpenActionMenu(null);
+                                    }}
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                  >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </li>
 
-                                {!shipments.tracking_number &&
-                                  (Number(shipments.shipping_fee) === 0 ||
-                                    shipments.shipping_fee === null) && (
-                                    <li
-                                      onClick={() => {
-                                        openAddTrackingModal(shipments);
-                                        setOpenActionMenu(null);
-                                      }}
-                                      className="flex items-center px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
-                                    >
-                                      <PlusCircle className="h-4 w-4 mr-2" />
-                                      Add Tracking Number
-                                    </li>
-                                  )}
+                                  {!shipments.tracking_number &&
+                                    (Number(shipments.shipping_fee) === 0 ||
+                                      shipments.shipping_fee === null) && (
+                                      <li
+                                        onClick={() => {
+                                          openAddTrackingModal(shipments);
+                                          setOpenActionMenu(null);
+                                        }}
+                                        className="flex items-center px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                      >
+                                        <PlusCircle className="h-4 w-4 mr-2" />
+                                        Add Tracking Number
+                                      </li>
+                                    )}
 
-                                <li
-                                  onClick={() => {
-                                    handleDelete(shipments);
-                                    setOpenActionMenu(null);
-                                  }}
-                                  className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Delete
-                                </li>
-                              </ul>
-                            </div>
-                          )}
+                                  <li
+                                    onClick={() => {
+                                      handleDelete(shipments);
+                                      setOpenActionMenu(null);
+                                    }}
+                                    className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </li>
+                                </ul>
+                              </div>
+                            )}
                         </td>
                       </tr>
                     );

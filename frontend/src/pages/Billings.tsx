@@ -39,6 +39,10 @@ function Billings() {
   const [selectedStatus, setSelectedStatus] = useState<BillingStatus | "All">(
     "All"
   );
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
   const { register, handleSubmit, reset, control, setValue } =
     useForm<BillingFormData>();
@@ -97,15 +101,15 @@ function Billings() {
   }, [fetchBillings]);
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpenActionMenu(null);
+        setOpenActionMenu(null); // Close the dropdown on Escape key press
       }
     };
 
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpenActionMenu(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenActionMenu(null); // Close the dropdown if clicked outside
       }
     };
 
@@ -116,7 +120,7 @@ function Billings() {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [setOpenActionMenu]);
+  }, [menuRef]);
 
   // Format the date for MySQL
   const formatDateForMySQL = (date) => {
@@ -249,6 +253,20 @@ function Billings() {
     setIsModalOpen(false);
     setEditingBilling(null);
     reset();
+  };
+
+  const handleActionMenuClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    billingId: string
+  ) => {
+    const buttonRect = (
+      event.currentTarget as HTMLElement
+    ).getBoundingClientRect();
+    setDropdownPosition({
+      top: buttonRect.bottom, // Position the dropdown directly below the button
+      left: buttonRect.left + buttonRect.width / 2, // Center horizontally relative to the button
+    });
+    setOpenActionMenu(openActionMenu === billingId ? null : billingId);
   };
 
   return (
@@ -496,86 +514,54 @@ function Billings() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="relative inline-block text-left">
                           <button
-                            onClick={() =>
-                              setOpenActionMenu(
-                                openActionMenu === String(billing.id)
-                                  ? null
-                                  : String(billing.id)
-                              )
+                            onClick={(event) =>
+                              handleActionMenuClick(event, String(billing.id))
                             }
                             className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                           >
                             <MoreVertical className="h-5 w-5" />
                           </button>
                         </div>
-                        {openActionMenu === String(billing.id) && (
-                          <div
-                            ref={menuRef}
-                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
-                          >
-                            <div className="py-1" role="menu">
-                              <button
-                                onClick={() => {
-                                  window.open(
-                                    `/api/billings/${billing.id}/download`,
-                                    "_blank"
-                                  );
-                                  setOpenActionMenu(null);
-                                }}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
+                        {openActionMenu === String(billing.id) &&
+                          dropdownPosition && (
+                            <div
+                              ref={menuRef}
+                              className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                              style={{
+                                position: "fixed", // Ensure the dropdown is positioned relative to the viewport
+                                top: dropdownPosition.top,
+                                left: dropdownPosition.left,
+                                transform: "translateX(-50%)", // Center the dropdown horizontally
+                              }}
+                            >
+                              <ul
+                                className="py-1"
+                                role="menu"
+                                aria-orientation="vertical"
                               >
-                                <Download className="h-4 w-4 mr-2" />
-                                Download PDF
-                              </button>
-                              {canEdit &&
-                                billing.status !== "Paid" &&
-                                billing.status !== "Cancelled" && (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        openEditModal(billing);
-                                        setOpenActionMenu(null);
-                                      }}
-                                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleMarkAsPaid(billing.id);
-                                        setOpenActionMenu(null);
-                                      }}
-                                      className="flex items-center px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-2" />
-                                      Mark as Paid
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleDeleteBilling(billing.id);
-                                        setOpenActionMenu(null);
-                                      }}
-                                      className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleCancelBilling(billing.id);
-                                        setOpenActionMenu(null);
-                                      }}
-                                      className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
-                                    >
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                      Cancel
-                                    </button>
-                                  </>
-                                )}
+                                <li
+                                  onClick={() => {
+                                    openEditModal(billing);
+                                    setOpenActionMenu(null);
+                                  }}
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </li>
+                                <li
+                                  onClick={() => {
+                                    handleDeleteBilling(billing.id);
+                                    setOpenActionMenu(null);
+                                  }}
+                                  className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </li>
+                              </ul>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </td>
                     </tr>
                   ))
