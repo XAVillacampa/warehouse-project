@@ -69,10 +69,10 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billing.id
                 ? {
-                  ...billing,
-                  shipping_fee: Number(billing.shipping_fee),
-                  updated_at: new Date(),
-                }
+                    ...billing,
+                    shipping_fee: Number(billing.shipping_fee),
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -106,11 +106,11 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billingId
                 ? {
-                  ...b,
-                  status: "Paid" as BillingStatus,
-                  paid_on: new Date(),
-                  updated_at: new Date(),
-                }
+                    ...b,
+                    status: "Paid" as BillingStatus,
+                    paid_on: new Date(),
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -126,10 +126,10 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billingId
                 ? {
-                  ...b,
-                  status: "Cancelled" as BillingStatus,
-                  updated_at: new Date(),
-                }
+                    ...b,
+                    status: "Cancelled" as BillingStatus,
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -162,10 +162,10 @@ export const useBillingStore = create<BillingState>()(
             billings: state.billings.map((b) =>
               b.id === billingId
                 ? {
-                  ...b,
-                  shipping_fee: newShippingFee,
-                  updated_at: new Date(),
-                }
+                    ...b,
+                    shipping_fee: newShippingFee,
+                    updated_at: new Date(),
+                  }
                 : b
             ),
           }));
@@ -177,6 +177,7 @@ export const useBillingStore = create<BillingState>()(
       bulkUploadBillings: async (billings: NewBilling[]) => {
         try {
           const response = await bulkUploadBillingsAPI(billings);
+          // console.log("Bulk uploaded billings:", response); // Debug log commented out
 
           // Add the uploaded billings to the state
           set((state) => ({

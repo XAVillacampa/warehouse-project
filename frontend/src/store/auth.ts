@@ -16,7 +16,6 @@ import {
 } from "../services/api";
 import { useEffect } from "react";
 import { User as UserType, UserRole as UserRoleType } from "../types";
-import { a } from "vitest/dist/suite-IbNSsUWN.js";
 
 interface AuthState {
   user: UserType | null;
@@ -64,7 +63,6 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         try {
           const response = await loginAPI(email, password);
-
           // Ensure the response has both token and user
           if (!response || !response.token || !response.user) {
             throw new Error("Invalid login response");
@@ -81,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
           throw new Error("Login failed");
         }
         const response = await loginAPI(email, password);
-        console.log("Login API response:", response);
+        // console.log("Login API response:", response); // Debug log commented out
       },
 
       logout: () => set({ user: null, isAuthenticated: false }),
@@ -89,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
       fetchUsers: async () => {
         try {
           const fetchedUsers = await fetchUsersAPI();
-          const formattedUsers = fetchedUsers.map(user => ({
+          const formattedUsers = fetchedUsers.map((user) => ({
             ...user,
             isSuspended: user.activity_status === "suspended",
           }));
@@ -182,29 +180,27 @@ export const useAuthStore = create<AuthState>()(
       resetUserPassword: async (userId: string, newPassword: string) => {
         try {
           const response = await resetPasswordAPI(userId, newPassword);
-      
+
           // Log the response to inspect its structure
-          console.log("API response from resetPasswordAPI:", response);
-      
+          // console.log("API response from resetPasswordAPI:", response); // Debug log commented out
+
           if (!response || !response.hashedPassword) {
             throw new Error("Invalid response from password reset API");
           }
-      
+
           // Update the user's password in the local state
           set((state) => ({
             users: state.users.map((u) =>
               u.id === userId ? { ...u, password: response.hashedPassword } : u
             ),
           }));
-      
-          console.log("Password reset successfully for user:", userId);
+
+          // console.log("Password reset successfully for user:", userId); // Debug log commented out
         } catch (error) {
           console.error("Error resetting password:", error);
           throw error;
         }
       },
-      
-      
 
       activateUser: async (token: string, password: string) => {
         const decoded = verifyToken(token);

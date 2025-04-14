@@ -93,6 +93,7 @@ function Billings() {
       );
     };
     fetchOutboundData();
+    // console.log("Fetched outbound data:", outbound); // Debug log commented out
   }, [fetchOutbound, outbound]);
 
   // Fetch billings data using useEffect
@@ -168,7 +169,7 @@ function Billings() {
         billing_date: formatDateForMySQL(new Date(data.billing_date)),
         updated_at: formatDateForMySQL(new Date()),
       };
-      console.log("Updated Billing: ", updatedBilling);
+      // console.log("Updated Billing: ", updatedBilling); // Debug log commented out
       await updateBilling(updatedBilling);
       setAlert("Billing updated successfully", "success");
     } else {
@@ -182,7 +183,7 @@ function Billings() {
         order_id: data.order_id,
         paid_on: null,
       };
-      console.log("New Billing: ", newBilling);
+      // console.log("New Billing: ", newBilling); // Debug log commented out
       await addBilling({
         ...newBilling,
         id: Date.now(), // Generate a temporary ID
@@ -238,7 +239,7 @@ function Billings() {
 
   const openEditModal = (billing: Billing) => {
     setEditingBilling(billing);
-    console.log(billing);
+    // console.log(billing); // Debug log commented out
     setIsModalOpen(true);
     reset({
       order_id: billing.order_id,

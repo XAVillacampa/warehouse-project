@@ -13,7 +13,7 @@ const handleApiError = (error: any, message: string) => {
 export const fetchProductsAPI = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/inventory`);
-    // console.log("Fetched products:", response.data);
+    // console.log("Fetched products:", response.data); // Debug log commented out
     return response.data;
   } catch (error) {
     handleApiError(error, "Error fetching products");
@@ -23,7 +23,7 @@ export const fetchProductsAPI = async () => {
 export const addProductAPI = async (product) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/inventory`, product);
-    console.log("Added product:", response.data);
+    // console.log("Added product:", response.data); // Debug log commented out
     return response.data;
   } catch (error) {
     handleApiError(error, "Error adding product");
@@ -37,7 +37,7 @@ export const updateProductAPI = async (sku, product) => {
       `${API_BASE_URL}/inventory/${encodedSku}`,
       product
     );
-    console.log(`Updated product (SKU: ${sku}):`, response.data);
+    // console.log(`Updated product (SKU: ${sku}):`, response.data); // Debug log commented out
     return response.data;
   } catch (error) {
     handleApiError(error, "Error updating product");
@@ -47,7 +47,7 @@ export const updateProductAPI = async (sku, product) => {
 export const deleteProductAPI = async (sku) => {
   try {
     await axios.delete(`${API_BASE_URL}/inventory/${sku}`);
-    console.log(`Deleted product (SKU: ${sku})`); // Debugging
+    // console.log(`Deleted product (SKU: ${sku})`); // Debug log commented out
     return { success: true };
   } catch (error) {
     handleApiError(error, "Error deleting product");
@@ -97,7 +97,7 @@ export const updateNews = async (id, news) => {
 export const deleteNews = async (id) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/news/${id}`);
-  return response.data;
+    return response.data;
   } catch (error) {
     handleApiError(error, "Error deleting news");
   }
@@ -129,12 +129,12 @@ export const bulkImportInboundShipmentsAPI = async (
   shipments: InboundShipment[]
 ) => {
   try {
-    console.log("Shipments: ", shipments);
+    // console.log("Shipments: ", shipments); // Debug log commented out
     const response = await axios.post(
       `${API_BASE_URL}/inbound-shipments/bulk`, // Corrected URL
       shipments
     );
-    console.log("Bulk import response:", response);
+    // console.log("Bulk import response:", response); // Debug log commented out
     return response.data;
   } catch (error) {
     handleApiError(error, "Error bulk importing inbound shipments");
@@ -177,7 +177,7 @@ export const deleteInboundShipmentAPI = async (shipmentId) => {
 export const fetchOutboundShipmentsAPI = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/outbound-shipments`);
-    // console.log("Fetched outbound shipments:", response.data);
+    // console.log("Fetched outbound shipments:", response.data); // Debug log commented out
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     handleApiError(error, "Error fetching outbound shipments");
@@ -201,12 +201,12 @@ export const bulkImportOutboundShipmentsAPI = async (
   shipments: OutboundShipment[]
 ) => {
   try {
-    console.log("Shipments: ", shipments);
+    // console.log("Shipments: ", shipments); // Debug log commented out
     const response = await axios.post(
       `${API_BASE_URL}/outbound-shipments/bulk`,
       shipments
     );
-    console.log("Bulk import response:", response);
+    // console.log("Bulk import response:", response); // Debug log commented out
     return response.data;
   } catch (error) {
     handleApiError(error, "Error bulk importing outbound shipments");
@@ -242,7 +242,7 @@ export const loginAPI = async (email: string, password: string) => {
       password,
     });
 
-    console.log("Login API response:", response.data);
+    // console.log("Login API response:", response.data); // Debug log commented out
 
     if (!response.data || !response.data.token || !response.data.user) {
       throw new Error("Invalid login response");
@@ -417,7 +417,7 @@ export const fetchBillingsAPI = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log("Fetched billings response:", response.data);
+    // console.log("Fetched billings response:", response.data); // Debug log commented out
 
     if (!response || !response.data) {
       throw new Error("Invalid response from fetchBillingsAPI");
@@ -475,7 +475,7 @@ export const bulkUploadBillingsAPI = async (billings: NewBilling[]) => {
       }
     );
 
-    console.log("Bulk upload billings response:", response.data);
+    // console.log("Bulk upload billings response:", response.data); // Debug log commented out
     return response.data;
   } catch (error) {
     handleApiError(error, "Error bulk uploading billings");

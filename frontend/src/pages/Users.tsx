@@ -85,11 +85,11 @@ function Users() {
     if (token) {
       fetchUsers()
         .then((users) => {
-          console.log("Fetched Users:", users);
+          // console.log("Fetched Users:", users); // Debug log commented out
         })
         .catch((error) => console.error("Error in fetchUsers:", error));
     } else {
-      console.warn("No token found, not fetching users.");
+      // console.warn("No token found, not fetching users."); // Debug log commented out
     }
   }, []);
 
@@ -165,7 +165,7 @@ function Users() {
   // Handle form submission
   const onSubmit = async (data: Partial<UserData>) => {
     try {
-      console.log("Form Data:", data); // Log the form data
+      // console.log("Form Data:", data); // Debug log commented out
       if (editingUser) {
         // Update existing user
         const updatedUser: UserData = { ...editingUser, ...data };
@@ -185,7 +185,7 @@ function Users() {
           created_at: formatDateForMySQL(new Date()),
           updated_at: formatDateForMySQL(new Date()),
         };
-        console.log("New User", newUser);
+        // console.log("New User", newUser); // Debug log commented out
         await addUser(newUser);
         setAlert("User added successfully", "success");
       }

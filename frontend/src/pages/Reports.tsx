@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FileSpreadsheet, Download } from "lucide-react";
 import { useInventoryStore } from "../store";
+import { useAuthStore } from "../store/auth"; // Use the correct auth store
 import {
   generateStorageReport,
   generateInventoryReport,
@@ -18,6 +19,9 @@ function Reports() {
     fetchInbound,
     fetchOutbound,
   } = useInventoryStore();
+  const { user } = useAuthStore(); // Get the authenticated user
+  const role = user?.role || "guest"; // Default to "guest" if no user
+  const vendorNumber = user?.vendor_number || null; // Get vendor number if available
   const [startDate, setStartDate] = useState(
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
@@ -31,6 +35,22 @@ function Reports() {
     fetchOutbound();
   }, [fetchProducts, fetchInbound, fetchOutbound]);
 
+  // Filter data based on role and vendor number
+  const filteredInventory =
+    role === "vendor" && vendorNumber
+      ? inventory.filter((item) => item.vendor_number === vendorNumber)
+      : inventory;
+
+  const filteredInbound =
+    role === "vendor" && vendorNumber
+      ? inbound.filter((item) => item.vendor_number === vendorNumber)
+      : inbound;
+
+  const filteredOutbound =
+    role === "vendor" && vendorNumber
+      ? outbound.filter((item) => item.vendor_number === vendorNumber)
+      : outbound;
+
   const downloadReport = (
     type: "storage" | "inventory" | "inbound" | "outbound"
   ) => {
@@ -39,17 +59,25 @@ function Reports() {
 
     switch (type) {
       case "storage":
-        csvContent = generateStorageReport(inventory, startDate, endDate);
+        csvContent = generateStorageReport(
+          filteredInventory,
+          startDate,
+          endDate
+        );
         filename = `storage-report-${startDate}-to-${endDate}.csv`;
         break;
       case "inventory":
-        csvContent = generateInventoryReport(inventory, startDate, endDate);
+        csvContent = generateInventoryReport(
+          filteredInventory,
+          startDate,
+          endDate
+        );
         filename = `inventory-report-${startDate}-to-${endDate}.csv`;
         break;
       case "inbound":
         csvContent = generateInboundReport(
-          inbound,
-          inventory,
+          filteredInbound,
+          filteredInventory,
           startDate,
           endDate
         );
@@ -57,8 +85,8 @@ function Reports() {
         break;
       case "outbound":
         csvContent = generateOutboundReport(
-          outbound,
-          inventory,
+          filteredOutbound,
+          filteredInventory,
           startDate,
           endDate
         );

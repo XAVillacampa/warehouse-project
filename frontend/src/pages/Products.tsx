@@ -174,7 +174,7 @@ function Products() {
         created_at: formatDateForMySQL(new Date()),
         updated_at: formatDateForMySQL(new Date()),
       };
-      console.log("New product to add:", newProduct);
+      // console.log("New product to add:", newProduct); // Debug log commented out
       fetchProducts();
       addProduct(newProduct);
       setAlert("Product added successfully", "success");
@@ -194,7 +194,7 @@ function Products() {
         `Successfully imported ${products.length} new products`,
         "success"
       );
-      //console.log("Bulk imported products:", products);
+      // console.log("Bulk imported products:", products); // Debug log commented out
     }
     setIsBulkImportModalOpen(false);
   };

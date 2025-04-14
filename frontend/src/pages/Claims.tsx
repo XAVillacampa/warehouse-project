@@ -64,6 +64,7 @@ function Claims() {
     };
 
     fetchData();
+    // console.log("Fetched claims data"); // Debug log commented out
   }, [fetchClaims, setAlert]);
 
   // Fetch orders data for the dropdown
@@ -196,7 +197,7 @@ function Claims() {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-    console.log("Filtered claims:", filtered); // Debugging log
+    // console.log("Filtered claims:", filtered); // Debug log commented out
     return filtered;
   }, [claims, searchTerm, selectedStatus]);
 

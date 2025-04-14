@@ -100,26 +100,45 @@ function InboundShipments() {
 
   useEffect(() => {
     fetchInbound();
+    // Debug log commented out
     // console.log("Fetched indbound: ", inbound);
   }, []);
 
-  const productOptions = useMemo(
-    () =>
-      inventory.map((product) => ({
+  const productOptions = useMemo(() => {
+    const allowedVendorNumbers = user
+      ? useAuthStore.getState().getAllowedVendorNumbers(user)
+      : [];
+
+    return inventory
+      .filter((product) => {
+        // Restrict products based on allowed vendor numbers
+        if (allowedVendorNumbers.includes("ALL")) {
+          return true; // Admin and Staff can view all products
+        }
+        return allowedVendorNumbers.includes(product.vendor_number || "");
+      })
+      .map((product) => ({
         value: product.sku,
         label: `[${product.sku}] ${product.product_name}`,
         description: `Stock: ${product.stock_check} | Warehouse Code: ${product.warehouse_code}`,
         vendor_number: product.vendor_number,
         warehouse_code: product.warehouse_code,
-      })),
-    [inventory]
-  );
+      }));
+  }, [inventory, user]);
 
   const filteredShipments = useMemo(() => {
-    // console.log("All Products:", allProducts);
-    // console.log("Transactions:", allTransactions);
-    // console.log("Is Array?", Array.isArray(allTransactions));
+    const allowedVendorNumbers = user
+      ? useAuthStore.getState().getAllowedVendorNumbers(user)
+      : [];
+
     return inbound
+      .filter((shipment) => {
+        // Restrict shipments based on allowed vendor numbers
+        if (allowedVendorNumbers.includes("ALL")) {
+          return true; // Admin and Staff can view all shipments
+        }
+        return allowedVendorNumbers.includes(shipment.vendor_number || "");
+      })
       .filter((shipment) => {
         const product = inventory.find((p) => p.sku === shipment.sku);
         const searchString =
@@ -131,7 +150,7 @@ function InboundShipments() {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-  }, [inbound, inventory, searchTerm]);
+  }, [inbound, inventory, searchTerm, user]);
 
   // Format the date for MySQL
   const formatDateForMySQL = (date) => {
@@ -155,8 +174,8 @@ function InboundShipments() {
       note: data.note || "",
     };
 
-    // Log the shipment data to debug
-    console.log("Submitting shipment:", shipment);
+    // Debug log commented out
+    // console.log("Submitting shipment:", shipment);
 
     // If editing an existing shipment
     if (editingShipment) {
@@ -191,10 +210,11 @@ function InboundShipments() {
 
   const handleBulkImport = async (newTransactions: InboundShipment[]) => {
     try {
-      // Call the API endpoint with the whole array of transactions
-      await bulkUploadInbound(newTransactions);
+      // Debug log commented out
       // console.log("Bulk uploaded transactions:", newTransactions);
 
+      // Call the API endpoint with the whole array of transactions
+      await bulkUploadInbound(newTransactions);
       setAlert(
         `Successfully sent ${newTransactions.length} requests`,
         "success"
@@ -228,7 +248,8 @@ function InboundShipments() {
   // Handle delete shipment
   const handleDelete = async (shipment: InboundShipment) => {
     try {
-      console.log("Deleting shipment:", shipment);
+      // Debug log commented out
+      // console.log("Deleting shipment:", shipment);
       if (!shipment.id) throw new Error("Shipment ID not found");
       await deleteInbound(shipment.id);
       setAlert("Inbound shipment deleted successfully", "success");

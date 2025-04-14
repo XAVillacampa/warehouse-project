@@ -39,7 +39,7 @@ export const useClaimsStore = create<ClaimsState>()(
       addClaim: async (claim: NewClaim) => {
         try {
           const response = await addClaimAPI(claim);
-          console.log("Claim added:", response); // Log the response for debugging
+          // console.log("Claim added:", response); // Debug log commented out
           set((state) => ({
             claims: [...state.claims, response?.claim ?? {}], // Use the claim from the response or fallback to an empty object
           }));
@@ -52,7 +52,7 @@ export const useClaimsStore = create<ClaimsState>()(
       updateClaim: async (claim: ClaimsList) => {
         try {
           const response = await updateClaimAPI(claim.id, claim);
-          console.log("Claim updated:", response); // Log the response for debugging
+          // console.log("Claim updated:", response); // Debug log commented out
           set((state) => ({
             claims: state.claims.map(
               (c) =>
