@@ -70,13 +70,13 @@ const navigation: NavItem[] = [
     roles: ["admin", "staff"],
   },
   { name: "Users", href: "/users", icon: Users, roles: ["admin"] },
-  
-  // {
-  //   name: "Reports",
-  //   href: "/reports",
-  //   icon: FileText,
-  //   roles: ["admin", "staff"],
-  // },
+
+  {
+    name: "Reports",
+    href: "/reports",
+    icon: FileText,
+    roles: ["admin", "staff"],
+  },
 ];
 
 function Layout() {

@@ -43,12 +43,12 @@ export const useAlertStore = create<AlertState>((set) => ({
 
 interface InventoryState {
   inventory: Inventory[];
-  outbound: OutboundShipment[];
   inbound: InboundShipment[];
+  outbound: OutboundShipment[];
+  fetchProducts: () => void;
   addProduct: (product: Inventory) => void;
   updateProduct: (product: Inventory) => void;
   deleteProduct: (sku: string) => void;
-  fetchProducts: () => void;
   fetchInbound: () => void;
   addInbound: (inbound: InboundShipment) => void;
   bulkUploadInbound: (inbound: InboundShipment[]) => void;
@@ -69,22 +69,18 @@ export const useInventoryStore = create<InventoryState>()(
   persist(
     (set, get) => ({
       inventory: [],
-      transactions: [],
       inbound: [],
       outbound: [],
 
-      // Fetch products from backend
       fetchProducts: async () => {
         try {
           const products = await fetchProductsAPI();
-          // console.log(products);
           set({ inventory: products });
         } catch (error) {
           console.error("Error fetching products:", error);
         }
       },
 
-      // Add a new product
       addProduct: async (product) => {
         try {
           const newProduct = await addProductAPI(product);
@@ -96,7 +92,6 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Update a product
       updateProduct: async (product) => {
         try {
           const updatedProduct = await updateProductAPI(product.sku, product);
@@ -106,21 +101,10 @@ export const useInventoryStore = create<InventoryState>()(
             ),
           }));
         } catch (error) {
-          // If API fails, revert the change in state
-          set((state) => ({
-            inventory: state.inventory.map((p) =>
-              p.sku === product.sku
-                ? (state.inventory.find(
-                    (prod) => prod.sku === product.sku
-                  ) as Inventory)
-                : p
-            ),
-          }));
           console.error("Error updating product:", error);
         }
       },
 
-      // Delete a product
       deleteProduct: async (sku) => {
         try {
           await deleteProductAPI(sku);
@@ -132,7 +116,6 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Fetch inbound shipments
       fetchInbound: async () => {
         try {
           const inbound = await fetchInboundShipmentsAPI();
@@ -142,7 +125,6 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Add a new inbound shipment
       addInbound: async (inbound) => {
         try {
           const newInbound = await addInboundShipmentAPI(inbound);
@@ -152,7 +134,6 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Bulk import inbound shipments
       bulkUploadInbound: async (inbound) => {
         try {
           const result = await bulkImportInboundShipmentsAPI(inbound);
@@ -166,7 +147,6 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Update an inbound shipment
       updateInbound: async (inbound) => {
         try {
           const updatedInbound = await updateInboundShipmentAPI(
@@ -183,7 +163,6 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Delete an inbound shipment
       deleteInbound: async (id) => {
         try {
           await deleteInboundShipmentAPI(id);
@@ -195,55 +174,37 @@ export const useInventoryStore = create<InventoryState>()(
         }
       },
 
-      // Fetch outbound shipments
       fetchOutbound: async () => {
         try {
           const outbound = await fetchOutboundShipmentsAPI();
-          // console.log("Fetched outbound: ",outbound);
           set({ outbound });
         } catch (error) {
-          console.error("Error fetching outbound:", error);
+          console.error("Error fetching outbound shipments:", error);
         }
       },
 
-      // Add a new outbound shipment
       addOutbound: async (outbound) => {
         try {
           const newOutbound = await addOutboundShipmentAPI(outbound);
           set((state) => ({ outbound: [...state.outbound, newOutbound] }));
         } catch (error) {
-          console.error("Error adding outbound:", error);
+          console.error("Error adding outbound shipment:", error);
         }
       },
 
-      // Bulk import outbound shipments
       bulkUploadOutbound: async (outbound) => {
         try {
-          // Call the backend API to bulk upload outbound shipments
           const result = await bulkImportOutboundShipmentsAPI(outbound);
-
-          // Check if the API call was successful and contains updated shipments
           if (result.success && result.updatedShipments) {
-            // Store the updated shipments in a variable
-            const updatedShipments = result.updatedShipments;
-
-            // Update the state with the new shipments
             set((state) => ({
-              outbound: [...state.outbound, ...updatedShipments],
+              outbound: [...state.outbound, ...result.updatedShipments],
             }));
-
-            // Return the updated shipments for further use
-            return updatedShipments;
           }
-
-          return [];
         } catch (error) {
           console.error("Error bulk uploading outbound shipments:", error);
-          return [];
         }
       },
 
-      // Update an outbound shipment
       updateOutbound: async (outbound) => {
         try {
           const updatedOutbound = await updateOutboundShipmentAPI(
@@ -256,11 +217,10 @@ export const useInventoryStore = create<InventoryState>()(
             ),
           }));
         } catch (error) {
-          console.error("Error updating outbound:", error);
+          console.error("Error updating outbound shipment:", error);
         }
       },
 
-      // Delete an outbound shipment
       deleteOutbound: async (id) => {
         try {
           await deleteOutboundShipmentAPI(id);
@@ -268,14 +228,11 @@ export const useInventoryStore = create<InventoryState>()(
             outbound: state.outbound.filter((o) => o.id.toString() !== id),
           }));
         } catch (error) {
-          console.error("Error deleting outbound:", error);
+          console.error("Error deleting outbound shipment:", error);
         }
       },
 
-      updateOutboundShippingFee: async (
-        orderId: string,
-        newShippingFee: number
-      ) => {
+      updateOutboundShippingFee: async (orderId, newShippingFee) => {
         try {
           const outboundShipment = get().outbound.find(
             (shipment) => shipment.order_id === orderId
@@ -283,13 +240,11 @@ export const useInventoryStore = create<InventoryState>()(
 
           const outboundId = outboundShipment?.id;
 
-          // Update the shipping fee in the backend
           const updatedOutbound = await updateOutboundShipmentAPI(outboundId, {
             ...outboundShipment,
             shipping_fee: newShippingFee,
           });
 
-          // Update the state
           set((state) => ({
             outbound: state.outbound.map((shipment) =>
               shipment.order_id === orderId

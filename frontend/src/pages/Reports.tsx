@@ -4,13 +4,20 @@ import { useInventoryStore } from "../store";
 import {
   generateStorageReport,
   generateInventoryReport,
-  generateTransactionReport,
+  generateInboundReport,
+  generateOutboundReport,
 } from "../utils/reports";
 import DateRangeSelector from "../components/DateRangeSelector";
 
 function Reports() {
-  const { products, transactions, fetchProducts, fetchTransactions } =
-    useInventoryStore();
+  const {
+    inventory,
+    inbound,
+    outbound,
+    fetchProducts,
+    fetchInbound,
+    fetchOutbound,
+  } = useInventoryStore();
   const [startDate, setStartDate] = useState(
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   );
@@ -20,30 +27,42 @@ function Reports() {
 
   useEffect(() => {
     fetchProducts();
-    fetchTransactions();
-  }, [fetchProducts, fetchTransactions]);
+    fetchInbound();
+    fetchOutbound();
+  }, [fetchProducts, fetchInbound, fetchOutbound]);
 
-  const downloadReport = (type: "storage" | "inventory" | "transaction") => {
+  const downloadReport = (
+    type: "storage" | "inventory" | "inbound" | "outbound"
+  ) => {
     let csvContent = "";
     let filename = "";
 
     switch (type) {
       case "storage":
-        csvContent = generateStorageReport(products, startDate, endDate);
+        csvContent = generateStorageReport(inventory, startDate, endDate);
         filename = `storage-report-${startDate}-to-${endDate}.csv`;
         break;
       case "inventory":
-        csvContent = generateInventoryReport(products, startDate, endDate);
+        csvContent = generateInventoryReport(inventory, startDate, endDate);
         filename = `inventory-report-${startDate}-to-${endDate}.csv`;
         break;
-      case "transaction":
-        csvContent = generateTransactionReport(
-          transactions,
-          products,
+      case "inbound":
+        csvContent = generateInboundReport(
+          inbound,
+          inventory,
           startDate,
           endDate
         );
-        filename = `workflow-history-${startDate}-to-${endDate}.csv`;
+        filename = `inbound-report-${startDate}-to-${endDate}.csv`;
+        break;
+      case "outbound":
+        csvContent = generateOutboundReport(
+          outbound,
+          inventory,
+          startDate,
+          endDate
+        );
+        filename = `outbound-report-${startDate}-to-${endDate}.csv`;
         break;
     }
 
@@ -75,7 +94,7 @@ function Reports() {
         onEndDateChange={setEndDate}
       />
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Storage Report Card */}
         <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
           <div className="p-5">
@@ -144,7 +163,7 @@ function Reports() {
           </div>
         </div>
 
-        {/* Workflow History Card */}
+        {/* Inbound Report Card */}
         <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -154,11 +173,11 @@ function Reports() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Workflow History
+                    Inbound Shipments Report
                   </dt>
                   <dd>
                     <div className="text-lg font-medium text-gray-900 dark:text-white">
-                      All movements and changes
+                      Details of inbound shipments
                     </div>
                   </dd>
                 </dl>
@@ -168,7 +187,41 @@ function Reports() {
           <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
             <div className="text-sm">
               <button
-                onClick={() => downloadReport("transaction")}
+                onClick={() => downloadReport("inbound")}
+                className="inline-flex items-center font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Outbound Report Card */}
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <FileSpreadsheet className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                    Outbound Shipments Report
+                  </dt>
+                  <dd>
+                    <div className="text-lg font-medium text-gray-900 dark:text-white">
+                      Details of outbound shipments
+                    </div>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+            <div className="text-sm">
+              <button
+                onClick={() => downloadReport("outbound")}
                 className="inline-flex items-center font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
               >
                 <Download className="h-4 w-4 mr-2" />
