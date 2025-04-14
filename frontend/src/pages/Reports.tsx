@@ -116,7 +116,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("storage")}
@@ -150,7 +150,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("inventory")}
@@ -184,7 +184,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("inbound")}
@@ -218,7 +218,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("outbound")}
