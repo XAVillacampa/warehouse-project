@@ -96,7 +96,7 @@ function Reports() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Storage Report Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg flex flex-col justify-between">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -116,7 +116,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex items-center justify-center mt-auto">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("storage")}
@@ -130,7 +130,7 @@ function Reports() {
         </div>
 
         {/* Inventory Report Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg flex flex-col justify-between">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -150,7 +150,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex items-center justify-center mt-auto">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("inventory")}
@@ -164,7 +164,7 @@ function Reports() {
         </div>
 
         {/* Inbound Report Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg flex flex-col justify-between">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -184,7 +184,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex items-center justify-center mt-auto">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("inbound")}
@@ -198,7 +198,7 @@ function Reports() {
         </div>
 
         {/* Outbound Report Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg flex flex-col justify-between">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -218,7 +218,7 @@ function Reports() {
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex justify-center">
+          <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3 flex items-center justify-center mt-auto">
             <div className="text-sm">
               <button
                 onClick={() => downloadReport("outbound")}
