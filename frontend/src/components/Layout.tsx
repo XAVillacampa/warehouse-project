@@ -75,7 +75,7 @@ const navigation: NavItem[] = [
     name: "Reports",
     href: "/reports",
     icon: FileText,
-    roles: ["admin", "staff"],
+    roles: ["admin", "staff", "vendor"],
   },
 ];
 
