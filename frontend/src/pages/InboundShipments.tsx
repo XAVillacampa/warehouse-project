@@ -47,6 +47,8 @@ function InboundShipments() {
   } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const SHOW_ACTIONS_FOR_VENDOR = false; // Set to true to show actions for vendors
+
   const {
     register,
     handleSubmit,
@@ -67,6 +69,8 @@ function InboundShipments() {
   } = useInventoryStore();
   const { setAlert } = useAlertStore();
   const { user } = useAuthStore();
+
+  const isVendor = user?.role === "vendor";
 
   useEffect(() => {
     // Function to handle escape key
@@ -279,25 +283,27 @@ function InboundShipments() {
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
           Inbound Shipment
         </h1>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => {
-              setModalType("inbound");
-              setIsModalOpen(true);
-            }}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-          >
-            <ArrowUpCircle className="h-5 w-5 mr-2" />
-            New Inbound
-          </button>
-          <button
-            onClick={() => setIsBulkImportModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-          >
-            <Upload className="h-5 w-5 mr-2" />
-            Bulk Import
-          </button>
-        </div>
+        {!isVendor && (
+          <div className="flex space-x-3">
+            <button
+              onClick={() => {
+                setModalType("inbound");
+                setIsModalOpen(true);
+              }}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              <ArrowUpCircle className="h-5 w-5 mr-2" />
+              New Inbound
+            </button>
+            <button
+              onClick={() => setIsBulkImportModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              Bulk Import
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center space-x-4">
@@ -456,16 +462,18 @@ function InboundShipments() {
                   <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Tracking number
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  {(!isVendor || SHOW_ACTIONS_FOR_VENDOR) && (
+                    <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredShipments.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={!isVendor || SHOW_ACTIONS_FOR_VENDOR ? 7 : 6}
                       className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       No workflows found. Create a new inbound workflow to get
@@ -501,63 +509,64 @@ function InboundShipments() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                           {shipments.tracking_number}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="relative inline-block text-left">
-                            <button
-                              onClick={(event) =>
-                                handleActionMenuClick(
-                                  event,
-                                  shipments.id?.toString()
-                                )
-                              }
-                              className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 text-center"
-                            >
-                              <MoreVertical className="h-5 w-5" />
-                            </button>
-                          </div>
-
-                          {/* Action menu */}
-                          {openActionMenu === shipments.id?.toString() &&
-                            dropdownPosition && (
-                              <div
-                                ref={menuRef}
-                                className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
-                                style={{
-                                  position: "fixed", // Ensure the dropdown is positioned relative to the viewport
-                                  top: dropdownPosition.top,
-                                  left: dropdownPosition.left,
-                                  transform: "translateX(-50%)", // Center the dropdown horizontally
-                                }}
+                        {(!isVendor || SHOW_ACTIONS_FOR_VENDOR) && (
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="relative inline-block text-left">
+                              <button
+                                onClick={(event) =>
+                                  handleActionMenuClick(
+                                    event,
+                                    shipments.id?.toString()
+                                  )
+                                }
+                                className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 text-center"
                               >
-                                <ul
-                                  className="py-1"
-                                  role="menu"
-                                  aria-orientation="vertical"
+                                <MoreVertical className="h-5 w-5" />
+                              </button>
+                            </div>
+                            {/* Action menu */}
+                            {openActionMenu === shipments.id?.toString() &&
+                              dropdownPosition && (
+                                <div
+                                  ref={menuRef}
+                                  className="w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50"
+                                  style={{
+                                    position: "fixed", // Ensure the dropdown is positioned relative to the viewport
+                                    top: dropdownPosition.top,
+                                    left: dropdownPosition.left,
+                                    transform: "translateX(-50%)", // Center the dropdown horizontally
+                                  }}
                                 >
-                                  <li
-                                    onClick={() => {
-                                      openEditModal(shipments);
-                                      setOpenActionMenu(null);
-                                    }}
-                                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                  <ul
+                                    className="py-1"
+                                    role="menu"
+                                    aria-orientation="vertical"
                                   >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </li>
-                                  <li
-                                    onClick={() => {
-                                      handleDelete(shipments);
-                                      setOpenActionMenu(null);
-                                    }}
-                                    className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
-                                  >
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </li>
-                                </ul>
-                              </div>
-                            )}
-                        </td>
+                                    <li
+                                      onClick={() => {
+                                        openEditModal(shipments);
+                                        setOpenActionMenu(null);
+                                      }}
+                                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </li>
+                                    <li
+                                      onClick={() => {
+                                        handleDelete(shipments);
+                                        setOpenActionMenu(null);
+                                      }}
+                                      className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                                    >
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </li>
+                                  </ul>
+                                </div>
+                              )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })
