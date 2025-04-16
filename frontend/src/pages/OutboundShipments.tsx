@@ -17,6 +17,8 @@ import { useAuthStore } from "../store/auth";
 import { useBillingStore } from "../store/billing";
 import BulkOutboundShipmentModal from "../components/BulkOutboundShipmentModal";
 
+const SHOW_ACTIONS_FOR_VENDOR = false; // Set to true to show actions for vendors
+
 interface OutboundShipmentFormData {
   order_date: Date;
   order_id: string;
@@ -731,7 +733,7 @@ function OutboundShipments() {
                   <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Shipping Fee
                   </th>
-                  {!isVendor && (
+                  {(!isVendor || SHOW_ACTIONS_FOR_VENDOR) && (
                     <th className="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
@@ -742,7 +744,7 @@ function OutboundShipments() {
                 {filteredShipments.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={isVendor ? 7 : 8}
+                      colSpan={!isVendor || SHOW_ACTIONS_FOR_VENDOR ? 8 : 7}
                       className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       No workflows found. Create a new inbound or outbound
@@ -777,7 +779,7 @@ function OutboundShipments() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                           ${shipments.shipping_fee}
                         </td>
-                        {!isVendor && (
+                        {(!isVendor || SHOW_ACTIONS_FOR_VENDOR) && (
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="relative inline-block text-left">
                               <button

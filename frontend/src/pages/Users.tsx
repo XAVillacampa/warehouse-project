@@ -587,6 +587,17 @@ function Users() {
                               </li>
                               <li
                                 onClick={() => {
+                                  setSelectedUserId(user.id);
+                                  setIsPasswordResetModalOpen(true);
+                                  setOpenActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left cursor-pointer"
+                              >
+                                <Key className="h-4 w-4 mr-2" />
+                                Reset Password
+                              </li>
+                              <li
+                                onClick={() => {
                                   handleDeleteUser(user.id);
                                   setOpenActionMenu(null);
                                 }}
